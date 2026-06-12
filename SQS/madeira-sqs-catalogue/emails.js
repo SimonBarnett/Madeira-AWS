@@ -1,86 +1,73 @@
-// ====================== sqs/clubscan/emails.js ======================
-// Success / Failure email helpers for Clubscan
-// Uses the shared mailer from the central layer (/opt/nodejs/mailer)
-// Failure emails now accept recipients (driven by SANDBOX_NOTIFY from helpers.js)
-// Last updated: 11 June 2026
+// ====================== SQS/madeira-sqs-catalogue/emails.js ======================
+// Email sending handlers for SQS messages
+// Moved and adapted from the old API/routes/token/emails.js
 
 const { sendMail } = require('/opt/nodejs/mailer');
-const { logger } = require('/opt/nodejs/helpers');
+const { logger, getS3Client, GetObjectCommand } = require('/opt/nodejs/helpers');
+const QRCode = require('qrcode');
 
-// ====================== SUCCESS EMAIL ======================
-async function sendSuccessEmail(toEmails, clubId, url) {
-    // Normalise to array
-    let recipients = toEmails;
-    if (typeof recipients === 'string') {
-        recipients = recipients.split(',').map(e => e.trim()).filter(Boolean);
-    }
-
-    if (!Array.isArray(recipients) || recipients.length === 0) {
-        logger.warn('No valid emails to send success email to', { url });
-        return { success: false };
-    }
-
-    const widgetCode = `<div id="madeira-container"></div><script data-affiliate="${clubId}" data-css="madeira-widget.css" src="https://madeira-widget-bucket.s3.eu-west-2.amazonaws.com/madeira-widget.js?v=1.0"></script>`;
-    const escapedWidgetCode = widgetCode.replace(/</g, '&lt;').replace(/>/g, '&gt;');
-
-    const mailOptions = {
-        from: 'support@clubmadeira.uk',
-        to: recipients,
-        subject: `${url} Widget Code`,
-        text: `Onboarding of ${url} is now complete.\n\nHere is the widget code for the community site:\n\n${widgetCode}\n\nBest regards,\nThe Club Madeira Team`,
-        html: `
-            <p>Onboarding of <strong>${url}</strong> is now complete.</p>
-            <p>Here is the widget code for the community site:</p>
-            <pre style="background:#f4f4f4;padding:15px;border-radius:6px;">${escapedWidgetCode}</pre>
-            <p>Best regards,<br>The Club Madeira Team</p>
-        `
-    };
-
+async function getImageBuffer(key) {
     try {
-        const result = await sendMail(mailOptions);
-        logger.debug('✅ Success email sent', { recipients, url });
-        return result;
+        const s3 = await getS3Client();
+        const command = new GetObjectCommand({ Bucket: 'madeira-widget-bucket', Key: key });
+        const response = await s3.send(command);
+        const chunks = [];
+        for await (const chunk of response.Body) chunks.push(chunk);
+        return Buffer.concat(chunks);
     } catch (error) {
-        logger.error('Failed to send success email', { recipients, url, error: error.message });
-        return { success: false, reason: error.message };
+        logger.error('Failed to fetch image from S3', { key, error: error.message });
+        throw error;
     }
 }
 
-// ====================== FAILURE EMAIL ======================
-async function sendFailureEmail(toEmails, url, errorMessage) {
-    let recipients = toEmails;
+// ====================== HANDLERS ======================
 
-    if (typeof recipients === 'string') {
-        recipients = recipients.split(',').map(e => e.trim()).filter(Boolean);
+async function handleSendEmail(payload) {
+    const { emailType, payload: data } = payload;
+
+    switch (emailType) {
+        case 'onboarding':
+            return await sendOnboardingEmail(data);
+        case 'delegation':
+            return await sendDelegationEmail(data);
+        case 'delegation_accepted':
+            return await sendDelegationAcceptedEmail(data);
+        case 'merchant_buy_url':
+            return await sendMerchantBuyUrlEmail(data);
+        case 'partner_onboarded':
+            return await sendCPOnboardedEmail(data);
+        default:
+            logger.warn('Unknown emailType in SEND_EMAIL message', { emailType });
+            return { success: false, reason: 'unknown_email_type' };
     }
+}
 
-    if (!Array.isArray(recipients) || recipients.length === 0) {
-        logger.warn('No valid recipients for failure email', { url });
-        return { success: false };
-    }
+// Placeholder implementations (full versions to be moved here)
+async function sendOnboardingEmail(data) {
+    logger.info('Would send onboarding email (SQS)', data);
+    return { success: true };
+}
 
-    const mailOptions = {
-        from: 'noreply@clubmadeira.uk',
-        to: recipients,
-        subject: `Failure in Processing URL: ${url}`,
-        text: `Failed to process ${url}:\n\n${errorMessage}`,
-        html: `
-            <p><strong>Failed to process ${url}</strong></p>
-            <p>${errorMessage}</p>
-        `
-    };
+async function sendDelegationEmail(data) {
+    logger.info('Would send delegation email (SQS)', data);
+    return { success: true };
+}
 
-    try {
-        const result = await sendMail(mailOptions);
-        logger.debug('✅ Failure email sent', { recipients, url });
-        return result;
-    } catch (error) {
-        logger.error('Failed to send failure email', { url, error: error.message });
-        return { success: false, reason: error.message };
-    }
+async function sendDelegationAcceptedEmail(data) {
+    logger.info('Would send delegation accepted email (SQS)', data);
+    return { success: true };
+}
+
+async function sendMerchantBuyUrlEmail(data) {
+    logger.info('Would send merchant buy URL email (SQS)', data);
+    return { success: true };
+}
+
+async function sendCPOnboardedEmail(data) {
+    logger.info('Would send partner onboarded email (SQS)', data);
+    return { success: true };
 }
 
 module.exports = {
-    sendSuccessEmail,
-    sendFailureEmail
+    handleSendEmail
 };
