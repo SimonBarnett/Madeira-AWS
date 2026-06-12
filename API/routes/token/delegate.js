@@ -1,9 +1,9 @@
 // API/routes/token/delegate.js
 // Consolidated Delegation flow - actions: 'initiate' | 'accept'
 
-// Emails removed per instruction - only PIN via SMS
+// Emails kept (were already being sent before). Now using enqueue instead of direct calls.
 
-const { logger, sql } = require('/opt/nodejs/helpers');
+const { logger, sql, enqueueMessage } = require('/opt/nodejs/helpers');
 const { signJWT, verifyJWT } = require('/opt/nodejs/jwt');
 const { sendSmsTextmagic } = require('/opt/nodejs/sms');
 
@@ -64,7 +64,19 @@ module.exports = async (event, { action = 'initiate', pool, sandbox = false }) =
 
         const delegationToken = await signJWT({ delegatorId: user.user_id, expiry });
 
-        // Email removed - only send PIN via SMS
+        // Enqueue delegation email (was already being sent before)
+        await enqueueMessage({
+            type: 'SEND_EMAIL',
+            emailType: 'delegation',
+            payload: {
+                email: email_address,
+                token: delegationToken,
+                phone: normalizedPhone,
+                signup_url,
+                url: user.communityUrl || ''
+            }
+        });
+
         const smsMessage = `Your delegation OTP is ${otp}. It expires in 48 hours.`;
         const smsSuccess = await sendSmsTextmagic(normalizedPhone, smsMessage);
         if (!smsSuccess) {
@@ -137,7 +149,15 @@ module.exports = async (event, { action = 'initiate', pool, sandbox = false }) =
             .input('user_id', sql.Char(8), user_id)
             .query(`DELETE FROM delegation WHERE user_id = @user_id`);
 
-        // Email removed for delegation accepted flow
+        // Enqueue delegation accepted email (was already being sent before)
+        await enqueueMessage({
+            type: 'SEND_EMAIL',
+            emailType: 'delegation_accepted',
+            payload: {
+                new_email: delegation.email_address,
+                old_email: ''
+            }
+        });
 
         const user = await getUserById(user_id, event);
 
