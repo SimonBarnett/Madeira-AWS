@@ -1,5 +1,5 @@
 // API/routes/token/delete.js
-// Consolidated Delete flow - actions: 'initiate' | 'confirm'
+// Fully refactored to use SystemOTPs table (no placeholders)
 
 const { logger, sql } = require('/opt/nodejs/helpers');
 const { getUserById, normalizePhone, generatePin } = require('./helpers');
@@ -25,22 +25,23 @@ module.exports = async (event, { action = 'initiate', pool, sandbox = false }) =
         }
 
         const otp = generatePin();
-        const otp_id = crypto.randomUUID();
         const expires_at = new Date(Date.now() + 15 * 60 * 1000);
 
-        // Use passed pool - do not close
-        await pool.request()
-            .input('user_id', sql.VarChar(8), decoded.user_id)
-            .query(`DELETE FROM deletion WHERE user_id = @user_id`);
+        // Store in new SystemOTPs table
+        const payload = JSON.stringify({
+            email: user.email_address || null,
+            phone: normalizedPhone
+        });
 
         await pool.request()
-            .input('otp_id', sql.VarChar(50), otp_id)
-            .input('user_id', sql.VarChar(8), decoded.user_id)
+            .input('user_id', sql.Char(8), decoded.user_id)
             .input('otp', sql.VarChar(10), otp)
+            .input('token_type', sql.VarChar(50), 'deletion')
             .input('expires_at', sql.DateTime, expires_at)
+            .input('payload', sql.NVarChar(sql.MAX), payload)
             .query(`
-                INSERT INTO deletion (otp_id, user_id, otp, expires_at)
-                VALUES (@otp_id, @user_id, @otp, @expires_at)
+                INSERT INTO SystemOTPs (user_id, otp, token_type, created_at, expires_at, payload)
+                VALUES (@user_id, @otp, @token_type, GETDATE(), @expires_at, @payload)
             `);
 
         const smsMessage = `Your deletion OTP is ${otp}. It expires in 15 minutes.`;
@@ -64,19 +65,29 @@ module.exports = async (event, { action = 'initiate', pool, sandbox = false }) =
         }
 
         const otpCheck = await pool.request()
-            .input('user_id', sql.VarChar(8), decoded.user_id)
+            .input('user_id', sql.Char(8), decoded.user_id)
             .input('otp', sql.VarChar(10), otp)
-            .query(`SELECT * FROM deletion WHERE user_id = @user_id AND otp = @otp AND expires_at > GETDATE()`);
+            .input('token_type', sql.VarChar(50), 'deletion')
+            .query(`
+                SELECT * FROM SystemOTPs 
+                WHERE user_id = @user_id 
+                  AND otp = @otp 
+                  AND token_type = @token_type 
+                  AND expires_at > GETDATE()
+            `);
 
         if (otpCheck.recordset.length === 0) {
             return { statusCode: 400, body: { status: 'error', error_message: 'Invalid or expired OTP' } };
         }
 
+        const deletionRecord = otpCheck.recordset[0];
+
         logger.info('Simulating user deletion', { userId: decoded.user_id });
 
+        // Clean up the OTP record
         await pool.request()
-            .input('user_id', sql.VarChar(8), decoded.user_id)
-            .query(`DELETE FROM deletion WHERE user_id = @user_id`);
+            .input('otp_id', sql.Int, deletionRecord.otp_id)
+            .query('DELETE FROM SystemOTPs WHERE otp_id = @otp_id');
 
         if (sandbox) logger.debug('[SANDBOX] Deletion confirmed', { userId: decoded.user_id });
 
