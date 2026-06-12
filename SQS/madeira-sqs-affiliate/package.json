@@ -1,0 +1,21 @@
+{
+  "name": "madeira-affiliate",
+  "version": "1.0.0",
+  "description": "Madeira Affiliate Processor - Single Lambda using shared /opt/nodejs layer",
+  "main": "index.js",
+  "private": true,
+  "dependencies": {
+    "axios": "^1.7.2",
+    "paapi5-nodejs-sdk": "^1.0.0"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "deploy": "echo 'Deploy via AWS SAM / Serverless Framework or zip manually'",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "engines": {
+    "node": ">=18.x"
+  },
+  "author": "Madeira Team",
+  "license": "ISC"
+}

@@ -1,0 +1,33 @@
+{
+    "name": "madeira-sqs-merchant",
+    "version": "1.0.0",
+    "description": "Club Madeira Merchant Product Sync Orchestrator - Uses Shared Layer",
+    "main": "index.js",
+    "scripts": {
+      "start": "node index.js",
+      "deploy": "zip -r ../merchant-orchestrator.zip . -x 'node_modules/*' -x '*.git*' -x 'package-lock.json'"
+    },
+    "dependencies": {
+      "axios": "^1.7.2",
+      "node-fetch": "^2.7.0",
+      "uuid": "^9.0.1"
+    },
+    "engines": {
+      "node": "20.x"
+    },
+    "keywords": [
+      "club-madeira",
+      "merchant",
+      "affiliate",
+      "lambda",
+      "shopify",
+      "wix",
+      "woocommerce",
+      "bigcommerce",
+      "magento",
+      "awin"
+    ],
+    "author": "Club Madeira",
+    "license": "UNLICENSED",
+    "private": true
+  }

@@ -1,0 +1,178 @@
+<!--
+  Copyright (c) 2025 Simon Barnett
+
+  Permission is hereby granted, free of charge, to any person obtaining a copy
+  of this software and associated documentation files (the "Software"), to deal
+  in the Software without restriction, including without limitation the rights
+  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+  copies of the Software, and to permit persons to whom the Software is
+  furnished to do so, subject to the following conditions:
+
+  The above copyright notice and this permission notice shall be included in all
+  copies or substantial portions of the Software.
+
+  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+  SOFTWARE.
+
+  Usage Instructions for Partners:
+  This HTML template demonstrates how to integrate the header widget for navigation, the signup widget for user registration, and a dynamic footer. Follow these steps to adapt this template for your website:
+
+  1. Header Widget Integration:
+     - Add a <header> element with attributes:
+       - `data-header-widget`: Activates the navigation widget.
+       - `data-page-name`: Set to the page's display name (e.g., "Sign up") shown in the header.
+       - `data-requireToken`: Set to "true" for pages requiring user authentication, or "false" for public pages (this signup page uses "false").
+       - `data-icon`: Optional Font Awesome icon class (e.g., "fas fa-cog") for a custom logo icon; defaults to the page’s menu icon or "fas fa-home".
+     - Include the script: <script src="https://madeira-widget-bucket.s3.eu-west-2.amazonaws.com/header-widget.js"></script>
+       - This loads the widget, which manages navigation, authentication, and PWA features.
+
+  2. Configuration File (index.json):
+     - Host a file named `index.json` at your site’s root (e.g., https://your-site.com/index.json) with:
+       {
+         "loginUrl": "/your-login-page.html",
+         "affiliateCode": "YOUR_AFFILIATE_CODE",
+         "signupLinkUrl": "/your-signup-page.html"
+       }
+       - `loginUrl`: The relative or absolute URL to your login page (e.g., "/login.html" or "https://your-site.com/login"), used for the "Log in" link in the signup widget.
+       - `affiliateCode`: Your unique affiliate identifier (e.g., "PARTNER123"), required for the signup widget to process registration and appended to the Affiliate AI menu URL (e.g., "/category.html?affiliate=PARTNER123").
+       - `signupLinkUrl`: The relative or absolute URL to your signup page (e.g., "/signup.html" or "https://your-site.com/signup"), referenced by other widgets (e.g., login widget).
+     - Ensure the file is publicly accessible and correctly formatted to avoid fallback to defaults (`loginUrl: "/login.html"`, `affiliateCode: ""`, `signupLinkUrl: "/signup.html"`).
+
+  3. Progressive Web App (PWA) Support:
+     - Create a `/manifest.json` file referencing the provided icons:
+       - https://madeira-widget-bucket.s3.eu-west-2.amazonaws.com/icon-192.png
+       - https://madeira-widget-bucket.s3.eu-west-2.amazonaws.com/icon-512.png
+       Example manifest.json:
+       {
+         "name": "Your App Name",
+         "icons": [
+           { "src": "https://madeira-widget-bucket.s3.eu-west-2.amazonaws.com/icon-192.png", "sizes": "192x192", "type": "image/png" },
+           { "src": "https://madeira-widget-bucket.s3.eu-west-2.amazonaws.com/icon-512.png", "sizes": "512x512", "type": "image/png" }
+         ],
+         "start_url": "/index.html",
+         "display": "standalone",
+         "theme_color": "#000000",
+         "background_color": "#ffffff"
+       }
+     - Host a service worker file (`/sw.js`) for offline support. A basic example is available in the widget documentation.
+     - These enable PWA installation prompts and offline capabilities.
+
+  4. Signup Widget Integration:
+     - Add a <div id="signup-widget"></div> where the signup form should render.
+     - Include the script with attributes:
+       <script 
+         data-signup-widget
+         data-container-id="signup-widget"
+         src="https://madeira-widget-bucket.s3.eu-west-2.amazonaws.com/signup-widget.js">
+       </script>
+       - `data-signup-widget`: Activates the widget.
+       - `data-container-id`: Matches the ID of the container div ("signup-widget").
+     - The widget handles role selection (Community/Merchant), Terms of Service agreement, and signup form submission, storing an `authToken` in cookies upon initial success.
+     - Configuration (`affiliateCode`, `loginUrl`) is sourced from `index.json`.
+
+  5. Footer Integration:
+     - Add a <footer id="footer"></footer> element.
+     - Use the provided JavaScript to dynamically load `footer.html` content via fetch.
+     - Host a `footer.html` file at your site’s root with your footer content (e.g., contact info, links).
+     - Alternatively, replace the fetch with static footer content if preferred.
+
+  6. Authentication:
+     - The header widget uses AWS Lambda for authentication, checking an `authToken` in `localStorage` for protected pages.
+     - The signup widget initiates registration via the AWS Lambda API, storing an `authToken` in cookies for the completion step.
+     - This page uses `data-requireToken="false"`, making it publicly accessible. After signup, users complete registration with email, phone, and password.
+     - Ensure your login page (specified in `index.json`) is accessible for the "Log in" link.
+
+  7. Styling:
+     - Include your CSS file (e.g., <link rel="stylesheet" href="css/page.css">) to style the page.
+     - The header and signup widgets apply their own styles but can be customized via CSS overrides (see widget documentation).
+     - Ensure Font Awesome icons (loaded by both widgets) and intl-tel-input styles render correctly by avoiding conflicting CSS.
+
+  8. Testing and Deployment:
+     - Test the page on a static hosting platform (e.g., Wix, S3, Netlify) to verify:
+       - Header navigation works and displays public menu items (e.g., Login, Sign Up).
+       - `index.json` is fetched correctly (check console logs for `loginUrl`, `affiliateCode`).
+       - The signup widget renders, allows role selection, displays Terms of Service, and handles form submission.
+       - The "Log in" link points to the URL specified in `index.json`.
+       - PWA installation prompt appears on supported browsers.
+       - Footer content loads as expected.
+     - Use browser developer tools to debug issues (e.g., 404 for `index.json` or `footer.html`, API errors).
+     - Test signup with both Community and Merchant roles, verifying redirection to the completion form and successful submission.
+
+  For support, refer to the widget documentation or contact the integration team.
+-->
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <!-- Set character encoding and responsive viewport -->
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- Page title, customizable for your site -->
+    <title>Sign up</title>
+    <!-- Link to your custom CSS for styling the page -->
+    <link rel="stylesheet" href="css/page.css">
+</head>
+
+<body>
+    <!-- Header widget for navigation and authentication -->
+    <header 
+        data-header-widget 
+        data-page-name="Sign up" 
+        data-requireToken="false"
+    >
+        <!-- The header content is dynamically generated by header-widget.js -->
+    </header>
+    <!-- Load the header widget script from S3 -->
+    <script src="https://madeira-widget-bucket.s3.eu-west-2.amazonaws.com/header-widget.js"></script>
+
+    <!-- Main content area for page-specific content -->
+    <main>
+        <!-- Spacer for layout (replace with actual content or remove as needed) -->
+        <br><br>
+        <!-- Signup section for the signup widget -->
+        <section class="login">
+            <!-- Container for the signup widget -->
+            <div id="signup-widget">
+                <!-- The signup widget will render here -->
+            </div>
+            <!-- Load the signup widget script from S3 with configuration attributes -->
+            <script 
+                data-signup-widget
+                data-container-id="signup-widget"
+                src="https://madeira-widget-bucket.s3.eu-west-2.amazonaws.com/signup-widget.js"
+            ></script>
+        </section>
+    </main>
+
+    <!-- Footer element for dynamic or static content -->
+    <footer id="footer">
+        <!-- Footer content will be loaded dynamically from footer.html -->
+    </footer>
+    <!-- Script to dynamically load footer content -->
+    <script>
+        // Fetch footer.html and insert its content into the footer element
+        fetch('footer.html')
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Failed to load footer.html');
+                }
+                return response.text();
+            })
+            .then(data => {
+                document.getElementById('footer').innerHTML = data;
+            })
+            .catch(error => {
+                console.error('Error loading footer:', error.message);
+                // Set fallback content if footer.html fails to load
+                document.getElementById('footer').innerHTML = '<p>Footer content unavailable</p>';
+            });
+    </script>
+
+</body>
+</html>

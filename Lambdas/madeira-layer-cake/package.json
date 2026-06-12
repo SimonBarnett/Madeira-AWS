@@ -1,0 +1,12 @@
+{
+  "name": "madeira-layer-cake",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Unit test Lambda to verify all Madeira layers (core, auth, payments, grok)",
+  "main": "index.js",
+  "scripts": {
+    "deploy": "echo 'Use AWS Console or SAM to deploy'",
+    "test": "echo 'Run tests via Lambda Console Test Events'"
+  },
+  "dependencies": {}
+}

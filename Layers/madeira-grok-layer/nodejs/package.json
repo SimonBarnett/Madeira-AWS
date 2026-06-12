@@ -1,0 +1,11 @@
+{
+  "name": "madeira-grok-layer",
+  "version": "1.0.0",
+  "private": true,
+  "dependencies": {
+    "@dqbd/tiktoken": "^1.0.22",
+    "ajv": "^8.17.1",
+    "form-data": "^4.0.5",
+    "node-fetch": "^2.7.0"
+  }
+}

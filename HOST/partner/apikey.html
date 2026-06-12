@@ -1,0 +1,171 @@
+<!--
+  Copyright (c) 2025 Simon Barnett
+
+  Permission is hereby granted, free of charge, to any person obtaining a copy
+  of this software and associated documentation files (the "Software"), to deal
+  in the Software without restriction, including without limitation the rights
+  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+  copies of the Software, and to permit persons to whom the Software is
+  furnished to do so, subject to the following conditions:
+
+  The above copyright notice and this permission notice shall be included in all
+  copies or substantial portions of the Software.
+
+  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+  SOFTWARE.
+
+  Usage Instructions for Partners:
+  This HTML template demonstrates how to integrate the header widget for navigation, an API keys widget, and a dynamic footer.
+  Follow these steps to adapt this template for your website:
+
+  1. Header Widget Integration:
+     - Add a <header> element with attributes:
+       - `data-header-widget`: Activates the navigation widget.
+       - `data-page-name`: Set to the page's display name (e.g., "API Keys") shown in the header.
+       - `data-requireToken`: Set to "true" for pages requiring user authentication, or "false" for public pages.
+       - `data-icon`: Optional Font Awesome icon class (e.g., "fas fa-cog") for a custom logo icon; defaults to the page’s menu icon or "fas fa-home".
+     - Include the script: <script src="https://madeira-widget-bucket.s3.eu-west-2.amazonaws.com/header-widget.js"></script>
+       - This loads the widget, which manages navigation, authentication, and PWA features.
+
+  2. Configuration File (index.json):
+     - Host a file named `index.json` at your site’s root (e.g., https://your-site.com/index.json) with:
+       {
+         "loginUrl": "/your-login-page.html",
+         "affiliateCode": "YOUR_AFFILIATE_CODE"
+       }
+       - `loginUrl`: The relative or absolute URL to your login page (e.g., "/login.html" or "https://your-site.com/login").
+       - `affiliateCode`: Your unique affiliate identifier (e.g., "PARTNER123"), appended to the Affiliate AI menu URL (e.g., "/category.html?affiliate=PARTNER123").
+     - Ensure the file is publicly accessible and correctly formatted to avoid fallback to defaults (`/login.html`, empty affiliate code).
+
+  3. Progressive Web App (PWA) Support:
+     - Create a `/manifest.json` file referencing the provided icons:
+       - https://madeira-widget-bucket.s3.eu-west-2.amazonaws.com/icon-192.png
+       - https://madeira-widget-bucket.s3.eu-west-2.amazonaws.com/icon-512.png
+       Example manifest.json:
+       {
+         "name": "Your App Name",
+         "icons": [
+           { "src": "https://madeira-widget-bucket.s3.eu-west-2.amazonaws.com/icon-192.png", "sizes": "192x192", "type": "image/png" },
+           { "src": "https://madeira-widget-bucket.s3.eu-west-2.amazonaws.com/icon-512.png", "sizes": "512x512", "type": "image/png" }
+         ],
+         "start_url": "/index.html",
+         "display": "standalone",
+         "theme_color": "#000000",
+         "background_color": "#ffffff"
+       }
+     - Host a service worker file (`/sw.js`) for offline support. A basic example is available in the widget documentation.
+     - These enable PWA installation prompts and offline capabilities.
+
+  4. API Keys Widget (if applicable):
+     - Add a <div id="api-keys-container"></div> where the API keys widget should render.
+     - Include the script: <script src="https://madeira-widget-bucket.s3.eu-west-2.amazonaws.com/api-widget.js"></script>
+       - This loads the widget for managing API keys, typically used on authenticated pages.
+
+  5. Footer Integration:
+     - Add a <footer id="footer"></footer> element.
+     - Use the provided JavaScript to dynamically load `footer.html` content via fetch.
+     - Host a `footer.html` file at your site’s root with your footer content (e.g., contact info, links).
+     - Alternatively, replace the fetch with static footer content if preferred.
+
+  6. Authentication:
+     - The header widget uses AWS Lambda for authentication, checking an `authToken` in `localStorage`.
+     - For pages with `data-requireToken="true"`, users without a valid token are redirected to the `loginUrl` from `index.json`.
+     - Ensure your login page stores an `authToken` in `localStorage` upon successful login.
+
+  7. Styling:
+     - Include your CSS file (e.g., <link rel="stylesheet" href="css/page.css">) to style the page.
+     - The header widget applies its own styles but can be customized via CSS overrides (see widget documentation).
+     - Ensure Font Awesome icons (loaded by the widget) render correctly by avoiding conflicting CSS.
+
+  8. Testing and Deployment:
+     - Test the page on a static hosting platform (e.g., Wix, S3, Netlify) to verify:
+       - Header navigation works and respects authentication.
+       - `index.json` is fetched correctly (check console logs for errors).
+       - PWA installation prompt appears on supported browsers.
+       - API keys widget (if used) renders in the container.
+       - Footer content loads as expected.
+     - Use browser developer tools to debug issues (e.g., 404 for `index.json` or `footer.html`).
+
+  For support, refer to the widget documentation or contact the integration team.
+  
+-->
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <!-- Set character encoding and responsive viewport -->
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- Page title, customizable for your site -->
+    <title>API Keys</title>
+    <!-- Link to your custom CSS for styling the page -->
+    <link rel="stylesheet" href="css/page.css">
+</head>
+
+<body>
+  <svg style="display: none;" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
+    <symbol id="magento-icon" viewBox="-2 0 24 24">
+        <path fill="currentColor" d="m17.7 19.368v-11.568l-7.5-4.632-7.5 4.632v11.568l-2.7-1.668v-11.4l10.2-6.3 10.2 6.3v11.4zm-9 1.306 1.5.926 1.5-.926v-13.412l3.3 2.038v11.735l-4.8 2.965-4.8-2.965v-11.735l3.3-2.038z"/>
+        <path fill="currentColor" d="m17.7 7.8-7.5-4.632-7.5 4.632v.009l-2.7-1.509 10.2-6.3 10.2 6.3-2.7 1.509zm-2.7 1.52-3.3 1.844v-3.902l3.3 2.038zm-6.3 1.844-3.3-1.846v-.018l3.3-2.038z"/>
+    </symbol>
+    <symbol id="bigcommerce-icon" viewBox="0 0 24 24">
+        <path fill="currentColor" d="M12.645 13.663h3.027c.861 0 1.406-.474 1.406-1.235 0-.717-.545-1.234-1.406-1.234h-3.027c-.1 0-.187.086-.187.172v2.125c.015.1.086.172.187.172zm0 4.896h3.128c.961 0 1.535-.488 1.535-1.35 0-.746-.545-1.35-1.535-1.35h-3.128c-.1 0-.187.087-.187.173v2.34c.015.115.086.187.187.187zM23.72.053l-8.953 8.93h1.464c2.281 0 3.63 1.435 3.63 3 0 1.235-.832 2.14-1.722 2.541-.143.058-.143.259.014.316 1.033.402 1.765 1.48 1.765 2.742 0 1.78-1.19 3.202-3.5 3.202h-6.342c-.1 0-.187-.086-.187-.172V13.85L.062 23.64c-.13.13-.043.359.143.359h23.631a.16.16 0 0 0 .158-.158V.182c.043-.158-.158-.244-.273-.13z"/>
+    </symbol>
+  </svg>
+    <!-- Header widget for navigation and authentication -->
+    <header 
+        data-header-widget 
+        data-page-name="API Keys" 
+        data-requireToken="true"
+    >
+        <!-- The header content is dynamically generated by header-widget.js -->
+    </header>
+    <!-- Load the header widget script from S3 -->
+    <script src="https://madeira-widget-bucket.s3.eu-west-2.amazonaws.com/header-widget.js"></script>
+
+    <!-- Main content area for page-specific content -->
+    <main>
+        <section class="apikeys">
+            <!-- Container for the API keys widget -->
+            <div id="api-keys-container">
+                <!-- The API keys widget will render here -->
+            </div>
+            <!-- Load the API keys widget script from S3 -->
+            <script src="https://madeira-widget-bucket.s3.eu-west-2.amazonaws.com/api-widget.js"></script>
+            <!-- Spacer for layout (replace with actual content or remove as needed) -->
+            <br><br><br><br><br>
+        </section>
+    </main>
+
+    <!-- Footer element for dynamic or static content -->
+    <footer id="footer">
+        <!-- Footer content will be loaded dynamically from footer.html -->
+    </footer>
+    <!-- Script to dynamically load footer content -->
+    <script>
+        // Fetch footer.html and insert its content into the footer element
+        fetch('footer.html')
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Failed to load footer.html');
+                }
+                return response.text();
+            })
+            .then(data => {
+                document.getElementById('footer').innerHTML = data;
+            })
+            .catch(error => {
+                console.error('Error loading footer:', error.message);
+                // Optional: Set fallback content if footer.html fails to load
+                document.getElementById('footer').innerHTML = '<p>Footer content unavailable</p>';
+            });
+    </script>
+
+</body>
+</html>
