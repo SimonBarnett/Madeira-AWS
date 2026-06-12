@@ -1,5 +1,5 @@
 // API/routes/token/onboarding.js
-// Refactored to use SystemOTPs table
+// Fully refactored to use SystemOTPs table (no placeholders)
 
 const { logger, sql, getStripeClient, enqueueMessage } = require('/opt/nodejs/helpers');
 const { signJWT, verifyJWT } = require('/opt/nodejs/jwt');
@@ -19,7 +19,7 @@ module.exports = async (event, { action, pool, sandbox = false }) => {
     const query = event.queryStringParameters || {};
     const decoded = event.decoded;
 
-    // ==================== generate (FULL) ====================
+    // ==================== generate ====================
     if (action === 'generate') {
         const user = await getUserById(decoded.user_id, event);
         if (!user) {
@@ -68,10 +68,10 @@ module.exports = async (event, { action, pool, sandbox = false }) => {
             return { statusCode: 409, body: { status: 'error', error_message: 'The email address is already in use.' } };
         }
 
-        // Cleanup old tokens
+        // Cleanup expired tokens for this email
         await pool.request()
             .input('email', sql.VarChar(255), email)
-            .query(`DELETE FROM SystemOTPs WHERE email = @email AND expires_at < GETDATE()`);
+            .query(`DELETE FROM SystemOTPs WHERE JSON_VALUE(payload, '$.email') = @email AND expires_at < GETDATE()`);
 
         const affiliateCode = await originCode(event);
         const signup_url = event.headers.origin || 'https://greenfieldsites.clubmadeira.io';
@@ -87,7 +87,6 @@ module.exports = async (event, { action, pool, sandbox = false }) => {
             return { statusCode: 500, body: { status: 'error', error_message: 'Failed to generate onboarding token' } };
         }
 
-        // Insert into new SystemOTPs table
         const payload = JSON.stringify({
             email: email,
             phone: normalizedPhone,
@@ -108,7 +107,6 @@ module.exports = async (event, { action, pool, sandbox = false }) => {
                 VALUES (@user_id, @otp, @token_type, GETDATE(), @expires_at, @payload)
             `);
 
-        // Enqueue email
         await enqueueMessage({
             type: 'SEND_EMAIL',
             emailType: 'onboarding',
@@ -122,7 +120,6 @@ module.exports = async (event, { action, pool, sandbox = false }) => {
             }
         });
 
-        // Send SMS
         const smsMessage = `Your onboarding PIN is ${pin}. It expires in 48 hours.`;
         const smsSuccess = await sendSmsTextmagic(normalizedPhone, smsMessage);
         if (!smsSuccess) {
@@ -136,7 +133,7 @@ module.exports = async (event, { action, pool, sandbox = false }) => {
         return { statusCode: 200, body: { status: 'success', message: 'Onboarding token generated successfully' } };
     }
 
-    // ==================== validate (FULL) ====================
+    // ==================== validate ====================
     if (action === 'validate') {
         const requestId = event.requestContext?.requestId || 'unknown';
         const { token: onboardingToken, pin } = body;
@@ -166,7 +163,6 @@ module.exports = async (event, { action, pool, sandbox = false }) => {
             return { statusCode: 403, body: { status: 'error', error_message: 'Invalid or unauthorized referrer' } };
         }
 
-        // Query new SystemOTPs table
         const tokenDataResult = await pool.request()
             .input('otp', sql.VarChar(10), pin)
             .input('token_type', sql.VarChar(50), 'onboarding')
@@ -217,7 +213,7 @@ module.exports = async (event, { action, pool, sandbox = false }) => {
         };
     }
 
-    // ==================== complete (FULL) ====================
+    // ==================== complete ====================
     if (action === 'complete') {
         const queryToken = query.token;
         if (!queryToken) {
@@ -226,26 +222,183 @@ module.exports = async (event, { action, pool, sandbox = false }) => {
 
         if (sandbox) logger.debug('[SANDBOX] Starting complete onboarding', { token: queryToken });
 
-        // For now we still read from old Tokens table during transition
-        // TODO: Move this to SystemOTPs in next iteration
-        const onboardingDataResult = await pool.request()
-            .input('token_id', sql.VarChar, queryToken)
-            .query('SELECT * FROM Tokens WHERE token_id = @token_id');
-
-        const onboardingData = onboardingDataResult.recordset[0];
-        if (!onboardingData) {
-            return { statusCode: 400, body: { status: 'error', error_message: 'Invalid token' } };
+        let payload;
+        try {
+            payload = await verifyJWT(queryToken);
+        } catch (error) {
+            return { statusCode: 401, body: { status: 'error', error_message: 'Invalid or malformed token' } };
         }
 
-        const issuedAt = new Date(onboardingData.issued_at);
-        if (Date.now() > issuedAt.getTime() + (48 * 60 * 60 * 1000)) {
-            return { statusCode: 400, body: { status: 'error', error_message: 'Token expired' } };
+        if (new Date() > new Date(payload.expiry)) {
+            return { statusCode: 400, body: { status: 'error', error_message: 'Token has expired' } };
         }
 
-        // ... rest of complete logic remains the same for now ...
-        // (We can fully migrate this later)
+        const tokenDataResult = await pool.request()
+            .input('otp', sql.VarChar(10), payload.pin || '')
+            .input('token_type', sql.VarChar(50), 'onboarding')
+            .query(`
+                SELECT * FROM SystemOTPs 
+                WHERE otp = @otp AND token_type = @token_type AND expires_at > GETDATE()
+            `);
 
-        return { statusCode: 200, body: { status: 'success', message: 'Complete flow still using old table during transition' } };
+        const tokenData = tokenDataResult.recordset[0];
+        if (!tokenData) {
+            return { statusCode: 400, body: { status: 'error', error_message: 'Invalid or expired token' } };
+        }
+
+        const tokenPayload = JSON.parse(tokenData.payload || '{}');
+        const role = tokenPayload.tokenType;
+        const signupUrl = tokenPayload.signup_url;
+        const stripeAccountId = tokenPayload.stripe_account_id;
+
+        event.headers = event.headers || {};
+        event.headers.origin = signupUrl;
+
+        let stripe;
+        try {
+            stripe = await getStripeClient(event);
+        } catch (error) {
+            logger.error('Failed to initialize Stripe client', { error: error.message });
+            return { statusCode: 500, body: { status: 'error', error_message: 'Failed to initialize Stripe' } };
+        }
+
+        let stripeAccount;
+        try {
+            stripeAccount = await stripe.accounts.retrieve(stripeAccountId);
+        } catch (error) {
+            logger.error('Failed to retrieve Stripe account', { stripeAccountId, error: error.message });
+            return { statusCode: 500, body: { status: 'error', error_message: 'Failed to retrieve Stripe account' } };
+        }
+
+        let userId;
+        let attempts = 0;
+        const maxAttempts = 25;
+        do {
+            userId = generateUserId();
+            attempts++;
+        } while (!(await isUserIdUnique(userId)) && attempts < maxAttempts);
+
+        if (attempts >= maxAttempts) {
+            return { statusCode: 500, body: { status: 'error', error_message: 'Failed to generate unique user ID' } };
+        }
+
+        const isSandboxStripe = stripe.isSandbox;
+        const logEmail = stripeAccount.email || tokenPayload.email;
+        const logPhone = stripeAccount.phone || tokenPayload.phone;
+
+        const userData = {
+            user_id: userId,
+            email_address: logEmail,
+            permissions: [role],
+            stripe_account_id: stripeAccountId,
+            role,
+            referrer: tokenData.user_id,
+            phone_number: logPhone
+        };
+
+        if (role === 'community') {
+            const individual = stripeAccount.individual || {};
+            userData.first_name = individual.first_name || null;
+            userData.last_name = individual.last_name || null;
+            userData.dob = individual.dob ? JSON.stringify(individual.dob) : null;
+            userData.address = individual.address || null;
+            userData.ssn_last_4 = individual.ssn_last_4 || null;
+        } else if (role === 'merchant' || role === 'partner') {
+            const company = stripeAccount.company || {};
+            userData.company_name = company.name || null;
+            userData.tax_id = company.tax_id || null;
+            userData.address = company.address || null;
+        }
+
+        if (role === 'community' && !userData.first_name && logEmail) userData.first_name = logEmail.split('@')[0];
+        if (role === 'merchant' && !userData.company_name && logEmail) userData.company_name = logEmail.split('@')[0];
+
+        await createUser(userData);
+        logger.info('User created from onboarding', { userId, role, email: logEmail });
+
+        if (role === 'partner' && tokenPayload.url) {
+            await pool.request()
+                .input('user_id', sql.VarChar, userId)
+                .input('signupurl', sql.VarChar, tokenPayload.url)
+                .query('UPDATE Users SET signupurl = @signupurl WHERE user_id = @user_id');
+        }
+
+        await capturePostHogEvent(userId, 'signup', {
+            user_id: userId,
+            role,
+            affiliate_code: tokenData.user_id
+        });
+
+        if (role === 'community' && tokenPayload.url) {
+            try {
+                await pool.request()
+                    .input('url', sql.NVarChar, tokenPayload.url)
+                    .input('clubId', sql.VarChar, userId)
+                    .input('partnerId', sql.VarChar, tokenData.user_id || null)
+                    .input('status', sql.VarChar, 'queued')
+                    .query(`
+                        MERGE INTO clubscan AS target
+                        USING (SELECT @url AS Url) AS source
+                        ON target.Url = source.Url
+                        WHEN NOT MATCHED THEN
+                            INSERT (Url, ClubID, PartnerId, Status, CreatedAt, UpdatedAt)
+                            VALUES (@url, @clubId, @partnerId, @status, GETDATE(), GETDATE());
+                    `);
+
+                await enqueueMessage({ type: 'CLUBSCAN_FETCH_CONTENT', url: tokenPayload.url });
+                logger.info('ClubScan pipeline started via SQS', { userId, url: tokenPayload.url });
+            } catch (err) {
+                logger.error('Failed to start ClubScan pipeline', { userId, url: tokenPayload.url, error: err.message });
+            }
+        }
+
+        if (role === 'partner' && tokenPayload.url) {
+            await enqueueMessage({
+                type: 'SEND_EMAIL',
+                emailType: 'partner_onboarded',
+                payload: {
+                    partnerEmail: logEmail,
+                    url: tokenPayload.url,
+                    partnerId: userId
+                }
+            });
+        }
+
+        if (role === 'merchant') {
+            const paymentResult = await confirmOnboarding(userId, tokenData.user_id, event);
+            if (paymentResult.statusCode !== 200) {
+                return { statusCode: paymentResult.statusCode, body: { status: 'error', error_message: 'Payment failed' } };
+            }
+        }
+
+        const token = await signJWT({
+            user_id: userId,
+            permissions: [role],
+            exp: Math.floor(Date.now() / 1000) + (24 * 60 * 60)
+        });
+
+        await setLastLogin(userId, event.requestContext?.identity?.sourceIp);
+
+        const contactName = userData.company_name || userData.first_name || userId;
+        const decodedSignupUrl = new URL(signupUrl || 'https://greenfieldsites.clubmadeira.io').href;
+
+        const redirectUrl = buildSetTokenUrl(
+            decodedSignupUrl,
+            token,
+            userId,
+            contactName,
+            'signup',
+            isSandboxStripe,
+            'This is your first login.'
+        );
+
+        await pool.request()
+            .input('otp_id', sql.Int, tokenData.otp_id)
+            .query('DELETE FROM SystemOTPs WHERE otp_id = @otp_id');
+
+        if (sandbox) logger.debug('[SANDBOX] Onboarding complete', { userId, role });
+
+        return { statusCode: 302, headers: { Location: redirectUrl }, body: '' };
     }
 
     if (action === 'complete-signup') {
