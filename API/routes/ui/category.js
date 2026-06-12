@@ -1,15 +1,9 @@
 // ====================== routes/ui/category.js ======================
 // Category route handler - uses SQS (CATEGORY_UPDATE)
-// Last updated: 03 June 2026
 
-const { 
-    logger, 
-    getUserCategories, 
-    enqueueMessage, 
-    setUserProcessing 
-} = require('/opt/nodejs/helpers');
+const { logger, getUserCategories, enqueueMessage, setUserProcessing } = require('/opt/nodejs/helpers');
 
-async function handleCategory(userId, body, method) {
+async function handleCategory(userId, body, method, { pool, sandbox = false } = {}) {
     logger.info('Handling category request', { userId, body, method });
 
     if (!userId || !body || !method) {
@@ -27,18 +21,14 @@ async function handleCategory(userId, body, method) {
 
         try {
             await setUserProcessing(userId, true);
+            await enqueueMessage({ type: 'CATEGORY_UPDATE', userId, body });
 
-            await enqueueMessage({
-                type: 'CATEGORY_UPDATE',
-                userId,
-                body
-            });
+            if (sandbox) logger.debug('[SANDBOX] CATEGORY_UPDATE enqueued', { userId });
 
             return { status: 'success' };
         } catch (error) {
             logger.error('Failed to enqueue CATEGORY_UPDATE', { userId, error: error.message });
             await setUserProcessing(userId, false).catch(() => {});
-            
             return {
                 status: 'error',
                 error_message: 'Failed to process your request',
@@ -48,7 +38,7 @@ async function handleCategory(userId, body, method) {
             };
         }
     } 
-    
+
     else if (method === 'GET') {
         const userData = await getUserCategories(userId);
 
@@ -76,8 +66,7 @@ async function handleCategory(userId, body, method) {
                 status: 'success',
                 categories: userData.categories,
                 exclude: userData.exclude || [],
-                dialog: userData.chat?.[userData.chat.length - 1]?.dialog || 
-                        'Welcome back! Here are your current categories.'
+                dialog: userData.chat?.[userData.chat.length - 1]?.dialog || 'Welcome back! Here are your current categories.'
             };
         }
 
