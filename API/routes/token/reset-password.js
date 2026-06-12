@@ -29,8 +29,19 @@ module.exports = async (event, { action = 'request', pool, sandbox = false }) =>
             return { statusCode: 404, body: { status: 'error', error_message: 'User not found' } };
         }
 
-        // Rate limit
+        // Rate limit + cleanup expired password reset tokens
         const threshold = new Date(Date.now() + 10 * 60 * 1000);
+
+        await pool.request()
+            .input('email', sql.VarChar(255), email.toLowerCase())
+            .input('token_type', sql.VarChar(50), 'password_reset')
+            .query(`
+                DELETE FROM SystemOTPs 
+                WHERE token_type = @token_type 
+                  AND JSON_VALUE(payload, '$.email') = @email 
+                  AND expires_at < GETDATE()
+            `);
+
         const recent = await pool.request()
             .input('user_id', sql.Char(8), user.user_id)
             .input('threshold', sql.DateTime, threshold)
