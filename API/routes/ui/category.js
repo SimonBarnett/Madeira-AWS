@@ -1,27 +1,27 @@
 // ====================== routes/ui/category.js ======================
-// Category route handler - uses SQS (CATEGORY_UPDATE)
+// Category route handler
+// Now uses clubscan.Status instead of isProcessing flag
+// 'finish on complete' - shows categories only when ClubScan status reaches a terminal state
 
-const { logger, getUserCategories, enqueueMessage, setUserProcessing } = require('/opt/nodejs/helpers');
+const { logger, executeWithRetry, sql, enqueueMessage, setUserProcessing } = require('/opt/nodejs/helpers');
 
 async function handleCategory(userId, body, method, { pool, sandbox = false } = {}) {
-    logger.info('Handling category request', { userId, body, method });
+    logger.info('Handling category request', { userId, method });
 
-    if (!userId || !body || !method) {
-        return {
-            status: 'error',
-            error_message: 'Invalid request parameters',
-            categories: {},
-            exclude: [],
-            dialog: 'We encountered an error. Please try again later.'
-        };
+    if (!userId) {
+        return { status: 'error', error_message: 'Invalid user', categories: {}, exclude: [], dialog: 'Error' };
     }
 
     if (method === 'POST') {
-        logger.info('Enqueuing CATEGORY_UPDATE to SQS', { userId });
-
         try {
             await setUserProcessing(userId, true);
-            await enqueueMessage({ type: 'CATEGORY_UPDATE', userId, body });
+
+            await enqueueMessage({
+                type: 'CATEGORY_UPDATE',
+                userId,
+                body,
+                sandbox
+            });
 
             if (sandbox) logger.debug('[SANDBOX] CATEGORY_UPDATE enqueued', { userId });
 
@@ -29,53 +29,74 @@ async function handleCategory(userId, body, method, { pool, sandbox = false } = 
         } catch (error) {
             logger.error('Failed to enqueue CATEGORY_UPDATE', { userId, error: error.message });
             await setUserProcessing(userId, false).catch(() => {});
-            return {
-                status: 'error',
-                error_message: 'Failed to process your request',
-                categories: {},
-                exclude: [],
-                dialog: 'We encountered an error while processing your categories.'
-            };
+            return { status: 'error', error_message: 'Failed to process request', categories: {}, exclude: [], dialog: 'Error processing categories.' };
         }
-    } 
+    }
 
-    else if (method === 'GET') {
-        const userData = await getUserCategories(userId);
+    // GET - Check clubscan status instead of isProcessing flag
+    if (method === 'GET') {
+        try {
+            const clubscanResult = await executeWithRetry(() =>
+                pool.request()
+                    .input('clubId', sql.VarChar, userId)
+                    .query(`
+                        SELECT TOP 1 Status, UpdatedAt 
+                        FROM clubscan 
+                        WHERE ClubID = @clubId 
+                        ORDER BY UpdatedAt DESC
+                    `)
+            );
 
-        if (userData.isProcessing) {
-            return {
-                status: 'processing',
-                categories: {},
-                exclude: [],
-                dialog: 'We are still processing your request. Please wait a moment.'
-            };
-        }
+            const clubscan = clubscanResult.recordset[0];
+            const status = clubscan?.Status || 'not_started';
 
-        if (userData.error) {
-            return {
-                status: 'error',
-                error_message: userData.error,
-                categories: {},
-                exclude: [],
-                dialog: 'We encountered an error. Please try again later.'
-            };
-        }
+            const isProcessing = ['queued', 'generating_categories', 'building_catalog', 'fetching_content'].includes(status);
 
-        if (userData.categories && Object.keys(userData.categories).length > 0) {
+            if (isProcessing) {
+                return {
+                    status: 'processing',
+                    categories: {},
+                    exclude: [],
+                    dialog: 'We are still processing your community data. Please wait a moment.'
+                };
+            }
+
+            // If complete or categories_complete, fetch from UserCategories
+            if (['complete', 'categories_complete', 'catalog_complete'].includes(status)) {
+                const userDataResult = await executeWithRetry(() =>
+                    pool.request()
+                        .input('uid', sql.VarChar, userId)
+                        .query(`
+                            SELECT json_categories, json_chat, exclude 
+                            FROM UserCategories 
+                            WHERE uid = @uid
+                        `)
+                );
+
+                const userData = userDataResult.recordset[0] || {};
+                let categories = {};
+                try { categories = JSON.parse(userData.json_categories || '{}'); } catch (e) {}
+
+                return {
+                    status: 'success',
+                    categories,
+                    exclude: userData.exclude || [],
+                    dialog: userData.json_chat ? JSON.parse(userData.json_chat).slice(-1)[0]?.dialog || 'Here are your current categories.' : 'Here are your current categories.'
+                };
+            }
+
+            // Default / not started
             return {
                 status: 'success',
-                categories: userData.categories,
-                exclude: userData.exclude || [],
-                dialog: userData.chat?.[userData.chat.length - 1]?.dialog || 'Welcome back! Here are your current categories.'
+                categories: {},
+                exclude: [],
+                dialog: 'Hello, and welcome to Club Madeira. Let’s get started by telling us about your community.'
             };
-        }
 
-        return {
-            status: 'success',
-            categories: {},
-            exclude: [],
-            dialog: 'Hello, and welcome to Club Madeira. Let’s get started by telling us about your community.'
-        };
+        } catch (error) {
+            logger.error('Error checking clubscan status', { userId, error: error.message });
+            return { status: 'error', error_message: error.message, categories: {}, exclude: [], dialog: 'Error loading categories.' };
+        }
     }
 }
 
