@@ -24,10 +24,20 @@ module.exports = async (event, { action = 'initiate', pool, sandbox = false }) =
             return { statusCode: 400, body: { status: 'error', error_message: 'Invalid phone number' } };
         }
 
+        // Cleanup any expired deletion OTPs for this user
+        await pool.request()
+            .input('user_id', sql.Char(8), decoded.user_id)
+            .input('token_type', sql.VarChar(50), 'deletion')
+            .query(`
+                DELETE FROM SystemOTPs 
+                WHERE user_id = @user_id 
+                  AND token_type = @token_type 
+                  AND expires_at < GETDATE()
+            `);
+
         const otp = generatePin();
         const expires_at = new Date(Date.now() + 15 * 60 * 1000);
 
-        // Store in new SystemOTPs table
         const payload = JSON.stringify({
             email: user.email_address || null,
             phone: normalizedPhone
@@ -84,7 +94,6 @@ module.exports = async (event, { action = 'initiate', pool, sandbox = false }) =
 
         logger.info('Simulating user deletion', { userId: decoded.user_id });
 
-        // Clean up the OTP record
         await pool.request()
             .input('otp_id', sql.Int, deletionRecord.otp_id)
             .query('DELETE FROM SystemOTPs WHERE otp_id = @otp_id');
