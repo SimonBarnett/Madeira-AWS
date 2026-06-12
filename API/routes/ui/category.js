@@ -1,9 +1,10 @@
 // ====================== routes/ui/category.js ======================
 // Category route handler
-// Now uses clubscan.Status instead of isProcessing flag
-// 'finish on complete' - shows categories only when ClubScan status reaches a terminal state
+// Uses clubscan.Status as the single source of truth for processing state.
+// Old isProcessing flag / setUserProcessing calls have been removed.
+// Terminal state is now driven by ClubScan jobs (clubscan.Status = 'completed' or equivalent).
 
-const { logger, executeWithRetry, sql, enqueueMessage, setUserProcessing } = require('/opt/nodejs/helpers');
+const { logger, executeWithRetry, sql, enqueueMessage } = require('/opt/nodejs/helpers');
 
 async function handleCategory(userId, body, method, { pool, sandbox = false } = {}) {
     logger.info('Handling category request', { userId, method });
@@ -14,8 +15,8 @@ async function handleCategory(userId, body, method, { pool, sandbox = false } = 
 
     if (method === 'POST') {
         try {
-            await setUserProcessing(userId, true);
-
+            // Note: We no longer call setUserProcessing here.
+            // ClubScan pipeline now owns the processing state via clubscan.Status
             await enqueueMessage({
                 type: 'CATEGORY_UPDATE',
                 userId,
@@ -28,12 +29,11 @@ async function handleCategory(userId, body, method, { pool, sandbox = false } = 
             return { status: 'success' };
         } catch (error) {
             logger.error('Failed to enqueue CATEGORY_UPDATE', { userId, error: error.message });
-            await setUserProcessing(userId, false).catch(() => {});
             return { status: 'error', error_message: 'Failed to process request', categories: {}, exclude: [], dialog: 'Error processing categories.' };
         }
     }
 
-    // GET - Check clubscan status instead of isProcessing flag
+    // GET - driven by clubscan.Status
     if (method === 'GET') {
         try {
             const clubscanResult = await executeWithRetry(() =>
@@ -48,9 +48,9 @@ async function handleCategory(userId, body, method, { pool, sandbox = false } = 
             );
 
             const clubscan = clubscanResult.recordset[0];
-            const status = clubscan?.Status || 'not_started';
+            const status = (clubscan?.Status || 'not_started').toLowerCase();
 
-            const isProcessing = ['queued', 'generating_categories', 'building_catalog', 'fetching_content'].includes(status);
+            const isProcessing = ['queued', 'generating_categories', 'building_catalog', 'fetching_content', 'processing'].includes(status);
 
             if (isProcessing) {
                 return {
@@ -61,8 +61,8 @@ async function handleCategory(userId, body, method, { pool, sandbox = false } = 
                 };
             }
 
-            // If complete or categories_complete, fetch from UserCategories
-            if (['complete', 'categories_complete', 'catalog_complete'].includes(status)) {
+            // Finished when status reaches completed / complete / categories_complete etc.
+            if (['completed', 'complete', 'categories_complete', 'catalog_complete'].includes(status)) {
                 const userDataResult = await executeWithRetry(() =>
                     pool.request()
                         .input('uid', sql.VarChar, userId)
@@ -85,7 +85,7 @@ async function handleCategory(userId, body, method, { pool, sandbox = false } = 
                 };
             }
 
-            // Default / not started
+            // Not started yet
             return {
                 status: 'success',
                 categories: {},
