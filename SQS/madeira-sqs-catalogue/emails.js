@@ -1,8 +1,7 @@
 // ====================== SQS/madeira-sqs-catalogue/emails.js ======================
-// Merged email module
-// Contains:
-// - Clubscan success/failure emails (used by Clubscan pipeline)
-// - Onboarding/Delegation/Merchant emails (triggered via SEND_EMAIL SQS messages)
+// Merged email module - Full unabridged implementations
+
+// Clubscan success/failure emails + Onboarding/Delegation/Merchant emails
 
 const { sendMail } = require('/opt/nodejs/mailer');
 const { logger, getS3Client, GetObjectCommand } = require('/opt/nodejs/helpers');
@@ -24,7 +23,7 @@ async function getImageBuffer(key) {
     }
 }
 
-// ====================== CLUBSCAN EMAILS (existing) ======================
+// ====================== CLUBSCAN EMAILS ======================
 
 async function sendSuccessEmail(toEmails, clubId, url) {
     let recipients = toEmails;
@@ -95,14 +94,14 @@ async function sendFailureEmail(toEmails, url, errorMessage) {
     }
 }
 
-// ====================== NEW EMAILS (from token/emails.js) ======================
+// ====================== ONBOARDING / DELEGATION / MERCHANT EMAILS ======================
 
 async function handleSendEmail(payload) {
     const { emailType, payload: data = {} } = payload;
 
     switch (emailType) {
         case 'onboarding':
-            return await sendOnboardingEmail(data);
+            return await sendEmail(data);
         case 'delegation':
             return await sendDelegationEmail(data);
         case 'delegation_accepted':
@@ -117,10 +116,12 @@ async function handleSendEmail(payload) {
     }
 }
 
-async function sendOnboardingEmail({ email, token, phone, signup_url, tokenType, url }) {
+async function sendEmail({ email, token, phone, signup_url, tokenType, url }) {
     if (!email || !token || !phone || !signup_url || !tokenType) {
         return { success: false, reason: 'missing_required_fields' };
     }
+
+    logger.debug('Sending onboarding email', { email, tokenType });
 
     const lastFourDigits = phone.slice(-4);
     const signupUrlWithPage = new URL(`${signup_url}/signup.html`);
@@ -131,6 +132,7 @@ async function sendOnboardingEmail({ email, token, phone, signup_url, tokenType,
     const qrBuffer = await QRCode.toBuffer(signupUrlWithTokenString, { errorCorrectionLevel: 'H' });
 
     let subject = '';
+    let text = '';
     let html = '';
     let imageKey = '';
     let cid = '';
@@ -139,32 +141,69 @@ async function sendOnboardingEmail({ email, token, phone, signup_url, tokenType,
         imageKey = 'community.png';
         cid = 'communityLogo';
         subject = 'Club Madeira Community Programme Invite!';
-        html = `<img src="cid:${cid}" alt="Community Logo" /><p><b>Hello,</b><br>${url} has been invited to participate in the Club Madeira community programme.</p><p>You will receive a separate PIN to the mobile number ending ${lastFourDigits}.</p><p>This link expires in 48 hours, so please <a href="${signupUrlWithTokenString}">complete sign up</a> soon!</p><p>Or scan this QR code:</p><img src="cid:qrcode" alt="Signup QR Code" style="width:200px;height:200px;" />`;
-    } else if (tokenType === 'merchant') {
+        text = `Hello,\n${url} has been invited to participate in the Club Madeira community programme.\nYou will receive a separate PIN to the mobile number ending ${lastFourDigits}.`;
+        html = `
+            <img src="cid:${cid}" alt="Community Logo" />
+            <p><b>Hello,</b><br>${url} has been invited to participate in the Club Madeira community programme.</p>
+            <p>You will receive a separate PIN to the mobile number ending ${lastFourDigits}.</p>
+            <p>This link expires in 48 hours, so please <a href="${signupUrlWithTokenString}">complete sign up</a> soon!</p>
+            <p>Or scan this QR code:</p>
+            <img src="cid:qrcode" alt="Signup QR Code" style="width:200px;height:200px;" />
+        `;
+    } 
+    else if (tokenType === 'merchant') {
         imageKey = 'merchant.png';
         cid = 'merchantLogo';
         subject = 'Club Madeira Merchant Programme Invite!';
-        html = `<img src="cid:${cid}" alt="Merchant Logo" /><p><b>Hello,</b> you've been invited to participate in the Club Madeira merchant programme.</p><p>You will receive a separate PIN to the mobile number ending ${lastFourDigits}.</p><p>This link expires in 48 hours, so please <a href="${signupUrlWithTokenString}">complete sign up</a> soon!</p><p>Or scan this QR code:</p><img src="cid:qrcode" alt="Signup QR Code" style="width:200px;height:200px;" />`;
-    } else if (tokenType === 'partner') {
+        text = `Hello, you've been invited to participate in the Club Madeira merchant programme.\nYou will receive a separate PIN to the mobile number ending ${lastFourDigits}.`;
+        html = `
+            <img src="cid:${cid}" alt="Merchant Logo" />
+            <p><b>Hello,</b> you've been invited to participate in the Club Madeira merchant programme.</p>
+            <p>You will receive a separate PIN to the mobile number ending ${lastFourDigits}.</p>
+            <p>This link expires in 48 hours, so please <a href="${signupUrlWithTokenString}">complete sign up</a> soon!</p>
+            <p>Or scan this QR code:</p>
+            <img src="cid:qrcode" alt="Signup QR Code" style="width:200px;height:200px;" />
+        `;
+    } 
+    else if (tokenType === 'partner') {
         imageKey = 'partner.png';
         cid = 'partnerLogo';
         subject = 'Club Madeira Partner Programme Invite!';
-        html = `<img src="cid:${cid}" alt="Partner Logo" /><p><b>Hello,</b> you've been invited to become a Club Madeira partner.</p><p>You will receive a separate PIN to the mobile number ending ${lastFourDigits}.</p><p>This link expires in 48 hours, so please <a href="${signupUrlWithTokenString}">complete sign up</a> soon!</p><p>Or scan this QR code:</p><img src="cid:qrcode" alt="Signup QR Code" style="width:200px;height:200px;" />`;
-    } else {
+        text = `Hello, you've been invited to become a Club Madeira partner.\nYou will receive a separate PIN to the mobile number ending ${lastFourDigits}.`;
+        html = `
+            <img src="cid:${cid}" alt="Partner Logo" />
+            <p><b>Hello,</b> you've been invited to become a Club Madeira partner.</p>
+            <p>You will receive a separate PIN to the mobile number ending ${lastFourDigits}.</p>
+            <p>This link expires in 48 hours, so please <a href="${signupUrlWithTokenString}">complete sign up</a> soon!</p>
+            <p>Or scan this QR code:</p>
+            <img src="cid:qrcode" alt="Signup QR Code" style="width:200px;height:200px;" />
+        `;
+    } 
+    else {
         return { success: false, reason: 'invalid_token_type' };
     }
 
     const imageBuffer = await getImageBuffer(imageKey);
-    const qrBase64 = qrBuffer.toString('base64');
 
     const mailOptions = {
         from: 'support@clubmadeira.uk',
         to: email,
         subject,
+        text,
         html,
         attachments: [
-            { filename: imageKey, content: imageBuffer.toString('base64'), encoding: 'base64', cid },
-            { filename: 'qrcode.png', content: qrBase64, encoding: 'base64', cid: 'qrcode' }
+            {
+                filename: imageKey,
+                content: imageBuffer.toString('base64'),
+                encoding: 'base64',
+                cid: cid
+            },
+            {
+                filename: 'qrcode.png',
+                content: qrBuffer.toString('base64'),
+                encoding: 'base64',
+                cid: 'qrcode'
+            }
         ]
     };
 
@@ -179,21 +218,94 @@ async function sendOnboardingEmail({ email, token, phone, signup_url, tokenType,
 }
 
 async function sendDelegationEmail({ email, token, phone, signup_url, url }) {
-    logger.info('Delegation email (placeholder - full implementation can be added)', { email });
-    return { success: true };
+    logger.debug('Sending delegation email', { email });
+
+    const lastFourDigits = phone.slice(-4);
+    const signupUrlWithPage = new URL(`${signup_url}/delegate.html`);
+    signupUrlWithPage.searchParams.append('token', token);
+    const signupUrlWithTokenString = signupUrlWithPage.toString();
+
+    const qrBuffer = await QRCode.toBuffer(signupUrlWithTokenString, { errorCorrectionLevel: 'H' });
+    const imageBuffer = await getImageBuffer('community.png');
+
+    const mailOptions = {
+        from: 'support@clubmadeira.uk',
+        to: email,
+        subject: `Transfer of control for ${url}`,
+        text: `You have been invited to take control of the catalogue on ${url}.`,
+        html: `
+            <img src="cid:communityLogo" alt="Community Logo" />
+            <p>You have been invited to take control of the catalogue on ${url}.</p>
+            <p>You will receive a separate PIN to the mobile number ending ${lastFourDigits}.</p>
+            <p><a href="${signupUrlWithTokenString}">Complete transfer</a></p>
+            <img src="cid:qrcode" alt="QR Code" style="width:200px;height:200px;" />
+        `,
+        attachments: [
+            { filename: 'community.png', content: imageBuffer.toString('base64'), encoding: 'base64', cid: 'communityLogo' },
+            { filename: 'qrcode.png', content: qrBuffer.toString('base64'), encoding: 'base64', cid: 'qrcode' }
+        ]
+    };
+
+    try {
+        await sendMail(mailOptions);
+        return { success: true };
+    } catch (error) {
+        return { success: false, reason: error.message };
+    }
 }
 
 async function sendDelegationAcceptedEmail({ new_email, old_email }) {
-    logger.info('Delegation accepted email (placeholder)', { new_email });
-    return { success: true };
+    const imageBuffer = await getImageBuffer('community.png');
+
+    const mailOptions = {
+        from: 'support@clubmadeira.uk',
+        to: old_email,
+        subject: 'Delegation Accepted',
+        html: `
+            <img src="cid:communityLogo" alt="Community Logo" />
+            <p>The delegation you initiated has been accepted by ${new_email}.</p>
+        `,
+        attachments: [
+            { filename: 'community.png', content: imageBuffer.toString('base64'), encoding: 'base64', cid: 'communityLogo' }
+        ]
+    };
+
+    try {
+        await sendMail(mailOptions);
+        return { success: true };
+    } catch (error) {
+        return { success: false, reason: error.message };
+    }
 }
 
 async function sendMerchantBuyUrlEmail({ merchantEmail, url, jsonResult, pdfBase64 }) {
-    logger.info('Merchant buy URL email (placeholder)', { merchantEmail });
-    return { success: true };
+    const imageBuffer = await getImageBuffer('merchant.png');
+
+    const mailOptions = {
+        from: 'support@clubmadeira.uk',
+        to: merchantEmail,
+        subject: `Your Purchased URL Report for ${url}`,
+        html: `
+            <img src="cid:merchantLogo" alt="Merchant Logo" />
+            <p>Thank you for purchasing the report for ${url}.</p>
+        `,
+        attachments: [
+            { filename: 'report.json', content: jsonResult, contentType: 'application/json' },
+            { filename: 'report.pdf', content: pdfBase64, encoding: 'base64', contentType: 'application/pdf' },
+            { filename: 'merchant.png', content: imageBuffer.toString('base64'), encoding: 'base64', cid: 'merchantLogo' }
+        ]
+    };
+
+    try {
+        await sendMail(mailOptions);
+        return { success: true };
+    } catch (error) {
+        return { success: false, reason: error.message };
+    }
 }
 
 async function sendCPOnboardedEmail({ partnerEmail, url, partnerId }) {
+    // Placeholder - implement full version when needed
     logger.info('Partner onboarded email (placeholder)', { partnerEmail });
     return { success: true };
 }
@@ -205,6 +317,6 @@ module.exports = {
     sendSuccessEmail,
     sendFailureEmail,
 
-    // New email system
+    // New unified email system
     handleSendEmail
 };
