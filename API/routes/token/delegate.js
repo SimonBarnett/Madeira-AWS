@@ -47,10 +47,15 @@ module.exports = async (event, { action = 'initiate', pool, sandbox = false }) =
             return { statusCode: 409, body: { status: 'error', error_message: 'Email already in use' } };
         }
 
-        // Cleanup old delegation tokens
+        // Cleanup expired delegation tokens for this email
         await pool.request()
             .input('email', sql.VarChar(255), email_address)
-            .query(`DELETE FROM SystemOTPs WHERE JSON_VALUE(payload, '$.email') = @email AND expires_at < GETDATE()`);
+            .query(`
+                DELETE FROM SystemOTPs 
+                WHERE token_type = 'delegation' 
+                  AND JSON_VALUE(payload, '$.email') = @email 
+                  AND expires_at < GETDATE()
+            `);
 
         const otp = generatePin();
         const expiry = new Date(Date.now() + 48 * 60 * 60 * 1000);
@@ -76,7 +81,6 @@ module.exports = async (event, { action = 'initiate', pool, sandbox = false }) =
                 VALUES (@user_id, @otp, @token_type, GETDATE(), @expires_at, @payload)
             `);
 
-        // Enqueue delegation email
         await enqueueMessage({
             type: 'SEND_EMAIL',
             emailType: 'delegation',
@@ -89,7 +93,6 @@ module.exports = async (event, { action = 'initiate', pool, sandbox = false }) =
             }
         });
 
-        // Send SMS with OTP
         const smsMessage = `Your delegation OTP is ${otp}. It expires in 48 hours.`;
         const smsSuccess = await sendSmsTextmagic(normalizedPhone, smsMessage);
         if (!smsSuccess) {
@@ -154,7 +157,6 @@ module.exports = async (event, { action = 'initiate', pool, sandbox = false }) =
             .input('otp_id', sql.Int, delegation.otp_id)
             .query('DELETE FROM SystemOTPs WHERE otp_id = @otp_id');
 
-        // Enqueue delegation accepted email
         await enqueueMessage({
             type: 'SEND_EMAIL',
             emailType: 'delegation_accepted',

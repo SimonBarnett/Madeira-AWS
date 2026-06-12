@@ -68,10 +68,9 @@ module.exports = async (event, { action, pool, sandbox = false }) => {
             return { statusCode: 409, body: { status: 'error', error_message: 'The email address is already in use.' } };
         }
 
-        // Cleanup expired tokens for this email
+        // Cleanup expired onboarding tokens
         await pool.request()
-            .input('email', sql.VarChar(255), email)
-            .query(`DELETE FROM SystemOTPs WHERE JSON_VALUE(payload, '$.email') = @email AND expires_at < GETDATE()`);
+            .query(`DELETE FROM SystemOTPs WHERE token_type = 'onboarding' AND expires_at < GETDATE()`);
 
         const affiliateCode = await originCode(event);
         const signup_url = event.headers.origin || 'https://greenfieldsites.clubmadeira.io';
