@@ -7,13 +7,10 @@ const { logger, getDbConnection } = require('/opt/nodejs/helpers');
 const claimsRoute = require('./claims');
 const loginRoute = require('./login');
 const resetPasswordRoute = require('./reset-password');
-const verifyResetCodeRoute = require('./verify-reset-code');
 const onboardingRoute = require('./onboarding');
 const completeSignupRoute = require('./complete-signup');
 const tosRoute = require('./tos');
 const addRoleRoute = require('./addRole');
-const generateOnboardingTokenRoute = require('./generateOnboardingToken');
-const validateOnboardingTokenRoute = require('./validateOnboardingToken');
 const delegateRoute = require('./delegate');
 const deleteRoute = require('./delete');
 
