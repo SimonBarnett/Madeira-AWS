@@ -1,9 +1,10 @@
 // API/routes/token/delegate.js
 // Consolidated Delegation flow - actions: 'initiate' | 'accept'
 
+// Emails removed per instruction - only PIN via SMS
+
 const { logger, sql } = require('/opt/nodejs/helpers');
 const { signJWT, verifyJWT } = require('/opt/nodejs/jwt');
-const { sendDelegationEmail, sendDelegationAcceptedEmail } = require('./email');
 const { sendSmsTextmagic } = require('/opt/nodejs/sms');
 
 const { 
@@ -40,7 +41,6 @@ module.exports = async (event, { action = 'initiate', pool, sandbox = false }) =
 
         const signup_url = event.headers.origin || 'https://greenfieldsites.clubmadeira.io';
 
-        // Use passed pool
         const userCheck = await pool.request()
             .input('email', sql.VarChar(255), email_address)
             .query(`SELECT COUNT(*) AS count FROM Users WHERE email_address = @email`);
@@ -64,11 +64,7 @@ module.exports = async (event, { action = 'initiate', pool, sandbox = false }) =
 
         const delegationToken = await signJWT({ delegatorId: user.user_id, expiry });
 
-        const emailResult = await sendDelegationEmail(email_address, delegationToken, normalizedPhone, signup_url, user.communityUrl || '');
-        if (!emailResult.success) {
-            return { statusCode: 500, body: { status: 'error', error_message: 'Failed to send email' } };
-        }
-
+        // Email removed - only send PIN via SMS
         const smsMessage = `Your delegation OTP is ${otp}. It expires in 48 hours.`;
         const smsSuccess = await sendSmsTextmagic(normalizedPhone, smsMessage);
         if (!smsSuccess) {
@@ -141,7 +137,7 @@ module.exports = async (event, { action = 'initiate', pool, sandbox = false }) =
             .input('user_id', sql.Char(8), user_id)
             .query(`DELETE FROM delegation WHERE user_id = @user_id`);
 
-        await sendDelegationAcceptedEmail(delegation.email_address, '');
+        // Email removed for delegation accepted flow
 
         const user = await getUserById(user_id, event);
 
