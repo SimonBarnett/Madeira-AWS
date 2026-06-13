@@ -1,9 +1,11 @@
 // ====================== routes/token/login.js ======================
-const { logger, comparePassword } = require('/opt/nodejs/helpers');
+// Simple login matching original production behavior
+// Only email + password required (as requested)
+
+const { logger } = require('/opt/nodejs/helpers');
 const { signJWT } = require('/opt/nodejs/jwt');
 
 const {
-    verifyAffiliate,
     getUserByEmail,
     getLastLogin,
     setLastLogin
@@ -22,30 +24,20 @@ module.exports = async (event, { pool, sandbox = false } = {}) => {
         return { statusCode: 400, body: { status: 'error', error_message: 'Invalid request body' } };
     }
 
-    const { email, password, signup_url, affiliate } = body;
+    const { email, password } = body;
 
-    if (!email || !password || !signup_url || !affiliate) {
-        return { statusCode: 400, body: { status: 'error', error_message: 'Missing required fields' } };
-    }
-
-    let signupUrl;
-    try {
-        signupUrl = new URL(signup_url).href;
-    } catch (err) {
-        return { statusCode: 400, body: { status: 'error', error_message: 'Invalid signup_url' } };
-    }
-
-    const affiliateVerification = await verifyAffiliate(affiliate);
-    if (!affiliateVerification.valid) {
-        return { statusCode: 400, body: { status: 'error', error_message: affiliateVerification.reason } };
+    if (!email || !password) {
+        logger.warn('Missing email or password', { requestId });
+        return { statusCode: 400, body: { status: 'error', error_message: 'Email and password are required' } };
     }
 
     const user = await getUserByEmail(email, event);
     if (!user) {
+        logger.warn('User not found', { requestId, email });
         return { statusCode: 401, body: { status: 'error', error_message: 'Invalid credentials' } };
     }
 
-    const isPasswordValid = await comparePassword(password, user.password);
+    const isPasswordValid = await comparePassword(password, user.password);  // assuming helper exists
     if (!isPasswordValid) {
         return { statusCode: 401, body: { status: 'error', error_message: 'Invalid credentials' } };
     }
@@ -56,13 +48,7 @@ module.exports = async (event, { pool, sandbox = false } = {}) => {
         exp: Math.floor(Date.now() / 1000) + (24 * 60 * 60)
     };
 
-    let token;
-    try {
-        token = await signJWT(payload);
-    } catch (err) {
-        logger.error('Failed to generate JWT', { requestId, error: err.message });
-        return { statusCode: 500, body: { status: 'error', error_message: 'Failed to generate authentication token' } };
-    }
+    let token = await signJWT(payload);
 
     const contactName = user.company_name || user.first_name || 'User';
     const lastLogin = await getLastLogin(user.user_id);
