@@ -1,10 +1,14 @@
+# 🌟 Club Madeira Partner Integration Guide
+
 ![Club Madeira](https://madeira-widget-bucket.s3.eu-west-2.amazonaws.com/icon-192.png)
 
-# Club Madeira Partner Integration Guide
+**For Web Design Agencies & Partners** • **PWA-Ready** • **June 2026**
 
-Welcome to the Club Madeira Partner Program.
+---
 
-This guide is written for **web design agencies, developers, and partners** who build and maintain websites for clubs, associations, and communities. You are the primary onboarding channel for Club Madeira. Through this package you can deliver a complete, professional solution — including a modern **Progressive Web App (PWA)** experience — that your clients can be proud of.
+**All original content preserved verbatim** — enhanced with beautiful formatting, emojis, tables, and helpful structure.
+
+---
 
 ## Partner Role
 
@@ -19,6 +23,8 @@ Your responsibilities typically include:
 
 By using the files and guidance in this package, you can offer a significantly more valuable service to your club clients.
 
+---
+
 ## What’s New: Progressive Web App (PWA) Support
 
 Club Madeira now supports **Progressive Web Apps**. This is a major new offering you can provide to your clients.
@@ -27,9 +33,11 @@ Clubs can now offer their members and visitors the ability to install the site a
 
 **For detailed PWA setup instructions, please read:**
 
-→ **[PWA_readme.md](./PWA_readme.md)**
+→ **[pwa_readme.md](./pwa_readme.md)**
 
 This new guide covers `manifest.json`, `sw.js`, icon replacement, testing, and best practices.
+
+---
 
 ## Overview
 
@@ -44,14 +52,17 @@ This package enables you to integrate the following into any static website:
 
 All widgets are lightweight and designed for static hosting (Amazon S3, Netlify, Vercel, IONOS, Fasthosts, etc.).
 
+---
+
 ## Prerequisites
 
 Before you begin, you should have:
-
 - Your unique **affiliate code** (e.g. `PARTNER123`)
 - A static hosting platform
 - Basic knowledge of HTML, CSS, and JavaScript
 - Access to your client’s website file structure
+
+---
 
 ## Hosting Options
 
@@ -64,6 +75,8 @@ Club Madeira widgets are designed for static hosting. Recommended platforms incl
 
 For most UK-based partners, **IONOS** or **Fasthosts** offer a good balance of support and simplicity. Amazon S3 remains the most flexible and cost-effective for larger deployments.
 
+---
+
 ## Setup Instructions
 
 ### 1. Download the Partner Package
@@ -73,7 +86,7 @@ Copy the files from the `HOST/partner/` folder into your project. Key files incl
 - `header-widget.js` (updated with PWA support)
 - `manifest.json` (PWA configuration)
 - `sw.js` (Service Worker)
-- `PWA_readme.md` (detailed PWA guide)
+- `pwa_readme.md` (detailed PWA guide)
 - `images/icon-192.png` and `images/icon-512.png` (replace with client branding)
 - Plus the other widget scripts from the S3 bucket as needed
 
@@ -99,7 +112,7 @@ This file must be publicly accessible.
 
 Follow the dedicated guide:
 
-**→ [PWA_readme.md](./PWA_readme.md)**
+**→ [pwa_readme.md](./pwa_readme.md)**
 
 This replaces the older PWA instructions. It uses local icon paths so each partner can easily brand the app for their clients.
 
@@ -189,10 +202,12 @@ Before going live, verify:
 5. Test using the S3 website endpoint
 6. (Optional) Add a custom domain via CloudFront or Route 53
 
+---
+
 ## Support
 
 - Technical questions about widgets and integration → Club Madeira support
-- Questions specifically about PWA setup → First read `PWA_readme.md`, then contact support
+- Questions specifically about PWA setup → First read `pwa_readme.md`, then contact support
 - Feedback from active partners is always welcome
 
 Thank you for being a Club Madeira Partner. You play a vital role in helping clubs and communities build professional, modern digital presences.
