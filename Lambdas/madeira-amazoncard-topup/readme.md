@@ -41,8 +41,8 @@ It is designed to run **once per week**.
 | `AMAZON_ACCESS_KEY_ID`      | SSM / Layer     | Access key for AGCOD signing                     | -                |
 | `AMAZON_SECRET_ACCESS_KEY`  | SSM / Layer     | Secret key for AGCOD signing                     | -                |
 | `AMAZON_BRAND`              | SSM / Layer     | Brand name shown on gift cards                   | `Club Madeira`   |
-| `AMAZON_CURRENCY`           | SSM / Layer     | Currency code                                    | `GBP`            |
-| `AMAZON_SANDBOX`            | SSM / Layer     | Use sandbox endpoint                             | `true` / `false` |
+| `AMAZON_CURRENCY`              | SSM / Layer     | Currency code                                    | `GBP`            |
+| `AMAZON_SANDBOX`              | SSM / Layer     | Use sandbox endpoint                             | `true` / `false` |
 
 ### Environment Variable (intentionally not in SSM)
 
@@ -146,7 +146,7 @@ See also: `API/routes/amazoncard/readme.md` for full details on the claiming sid
 ```
 Lambdas/amazoncard-topup/index.js
 Lambdas/amazoncard-topup/package.json
-Lambdas/amazoncard-topup/README.md
+Lambdas/amazoncard-topup/readme.md
 ```
 
 ---
