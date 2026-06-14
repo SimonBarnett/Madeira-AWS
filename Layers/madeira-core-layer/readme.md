@@ -18,18 +18,18 @@ It provides centralized:
 Layers/madeira-core-layer/
 ├── nodejs/
 │   ├── helpers.js              ← Main orchestrator (re-exports everything)
-│   ├── conf/
-│   │   ├── db-config.js
-│   │   ├── jwt-config.js
-│   │   ├── sms-config.js
-│   │   ├── incentive-config.js
-│   │   ├── stripe-config.js
-│   │   ├── mailer-config.js
-│   │   ├── grok-config.js
-│   │   ├── ebay-config.js
-│   │   ├── amazon-config.js
-│   │   └── awin-config.js
-│   └── (other modules: jwt.js, mailer.js, sms.js, etc.)
+│   └── conf/
+│       ├── db-config.js
+│       ├── jwt-config.js
+│       ├── sms-config.js
+│       ├── incentive-config.js
+│       ├── stripe-config.js
+│       ├── mailer-config.js
+│       ├── grok-config.js
+│       ├── ebay-config.js
+│       ├── amazon-config.js
+│       └── awin-config.js
+└── (other modules: jwt.js, mailer.js, sms.js, etc.)
 ```
 
 ---
@@ -61,6 +61,8 @@ const {
 | `hashPassword` / `comparePassword` | bcrypt helpers                            | `helpers.js`            |
 | `getS3Client`, `getSQSClient`, `getSSMClient`, `getLambdaClient` | Cached AWS SDK v3 clients | `helpers.js` |
 | `getAwsRegion`            | Resolves region (SSM override supported)         | `helpers.js`            |
+
+> **Note on bcrypt:** The functions `hashPassword()` and `comparePassword()` are provided here for convenience. See the [Auth Layer README](../madeira-auth-layer/readme.md) for context on why password hashing lives in the Core Layer rather than the Auth Layer.
 
 ---
 
@@ -179,6 +181,7 @@ const { JWT_SECRET_KEY } = await getJwtConfig();
 - The layer is designed to be **idempotent** and safe to update.
 - `executeWithRetry` is the recommended way to run all database operations (handles deadlocks and transient errors).
 - Never import config modules directly — always go through `helpers.js`.
+- **Bcrypt functions** (`hashPassword` / `comparePassword`) are provided here for convenience. See the [Auth Layer README](../madeira-auth-layer/readme.md) for why password hashing is centralized in the Core Layer.
 
 ---
 
