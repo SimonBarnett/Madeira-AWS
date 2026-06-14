@@ -1,6 +1,6 @@
 # 🦅 madeira-awin-clubscan Lambda
 
-**Purpose**: Central orchestrator and processor for all AWIN-related automation for Club Madeira.
+**Purpose**: Central orchestrator and processor for all Awin-related automation for Club Madeira.
 
 Handles daily global recommendations, club-specific personalised joins, new advertiser onboarding, merchant catalogue sync, and transaction ingestion.
 
@@ -46,15 +46,15 @@ These schedules pass structured event payloads (e.g. `{ "onboarding": true }`, `
 ## Core Concepts
 
 - **Orchestrator pattern**: `index.js` inspects the event and routes to the appropriate handler, reusing a single DB connection pool.
-- **Layer-first architecture**: Generic logic (DB, logging, Grok calls, mailer, hashing, config) lives in shared Layers. This Lambda only contains AWIN-specific orchestration and business logic.
+- **Layer-first architecture**: Generic logic (DB, logging, Grok calls, mailer, hashing, config) lives in shared Layers. This Lambda only contains Awin-specific orchestration and business logic.
 - **Idempotent & safe**: Uses `MERGE` statements, cooldown tracking, and sandbox mode for safe testing.
-- **Sandbox mode**: Pass `"sandbox": true` to generate test data and route emails to `si@ntsa.uk` (useful for end-to-end validation without hitting real AWIN quotas).
+- **Sandbox mode**: Pass `"sandbox": true` to generate test data and route emails to `si@ntsa.uk` (useful for end-to-end validation without hitting real Awin quotas).
 
 ### Business Context: Club Onboarding Flow
 
-When a new **community or club** onboards to the Club Madeira platform, the `club` route is triggered. It generates a curated, personalised list of relevant AWIN advertisers that the **partner can apply to on behalf of the club**.
+When a new **community or club** onboards to the Club Madeira platform, the `club` route is triggered. It generates a curated, personalised list of relevant Awin advertisers that the **partner can apply to on behalf of the club**.
 
-If the partner successfully onboards the AWIN supplier, they earn an **extra percentage** on all future transactions from that supplier. This creates strong commercial alignment between the partner’s success and the growth of the overall network.
+If the partner successfully onboards the Awin supplier, they earn an **extra percentage** on all future transactions from that supplier. This creates strong commercial alignment between the partner’s success and the growth of the overall network.
 
 ---
 
@@ -73,8 +73,8 @@ Common ones:
 ## Documentation Structure
 
 - **This file**: High-level purpose, setup, core concepts, and quick reference.
-- **[routes/README.md](routes/README.md)**: Detailed route-by-route documentation, triggers, accepted parameters, flows, and implementation notes for every handler.
+- **[routes/readme.md](routes/readme.md)**: Detailed route-by-route documentation, triggers, accepted parameters, flows, and implementation notes for every handler.
 
 ---
 
-**Full detailed route documentation lives in [routes/README.md](routes/README.md).**
+**Full detailed route documentation lives in [routes/readme.md](routes/readme.md).**
