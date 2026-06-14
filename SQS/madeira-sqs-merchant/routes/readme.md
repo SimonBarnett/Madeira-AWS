@@ -1,4 +1,4 @@
-# Madeira Merchant Connectors
+# 🔌 Madeira Merchant Connectors
 
 This folder contains **platform-specific connectors** used by the `madeira-sqs-merchant` Lambda.
 
