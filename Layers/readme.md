@@ -1,4 +1,4 @@
-# Madeira Lambda Layers
+# 🧱 Madeira Lambda Layers
 
 This directory contains the shared Lambda Layers used across the Madeira platform.
 
