@@ -1,4 +1,4 @@
-# Madeira Core Layer (`madeira-core-layer`)
+# 🧱 Madeira Core Layer (`madeira-core-layer`)
 
 This is the **shared Lambda Layer** used by all Madeira platform services (API Gateway, SQS Catalogue, Top-up Lambda, etc.).
 
@@ -12,7 +12,7 @@ It provides centralized:
 
 ---
 
-## Folder Structure
+## 📁 Folder Structure
 
 ```
 Layers/madeira-core-layer/
@@ -34,7 +34,7 @@ Layers/madeira-core-layer/
 
 ---
 
-## Main Entry Point: `helpers.js`
+## 🚀 Main Entry Point: `helpers.js`
 
 This file is the **single import point** for the entire layer.
 
@@ -64,7 +64,7 @@ const {
 
 ---
 
-## Configuration Modules & SSM Parameters
+## ⚙️ Configuration Modules & SSM Parameters
 
 All configuration is loaded from **AWS Systems Manager Parameter Store** with environment variable fallbacks and self-healing placeholders.
 
@@ -136,7 +136,7 @@ Used by the `amazoncard-topup` Lambda.
 
 ---
 
-## Usage Examples
+## 💡 Usage Examples
 
 ### Database + Retry
 
@@ -172,7 +172,7 @@ const { JWT_SECRET_KEY } = await getJwtConfig();
 
 ---
 
-## Important Notes
+## ⚠️ Important Notes
 
 - All config modules use **30-minute caching** to reduce SSM calls.
 - Missing parameters are automatically created as `CHANGE_ME` placeholders (self-healing).
