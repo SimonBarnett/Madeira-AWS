@@ -2,7 +2,7 @@
 
 **Detailed documentation for each route/handler in the madeira-awin-clubscan Lambda.**
 
-See the [top-level README](../README.md) for architecture overview, environment variables, EventBridge Scheduler setup, test events, and sandbox mode.
+See the [top-level readme](../readme.md) for architecture overview, environment variables, EventBridge Scheduler setup, test events, and sandbox mode.
 
 ---
 
@@ -31,7 +31,7 @@ See the [top-level README](../README.md) for architecture overview, environment 
 
 **Trigger**: No `clubId`, no `onboarding`, no `route` (or default path in orchestrator).
 
-**Purpose**: Daily run that recommends high-approval AWIN merchants to join.
+**Purpose**: Daily run that recommends high-approval Awin merchants to join.
 
 ### Accepted Parameters
 
@@ -55,7 +55,7 @@ See the [top-level README](../README.md) for architecture overview, environment 
 
 **Purpose**: Generate highly relevant merchant recommendations tailored to a specific club.
 
-> **Business Context**: This route is called when a new community/club onboards. The partner receives a ready-to-use list of AWIN advertisers they can apply to **on behalf of the club**. Successful onboarding of the supplier earns the partner an **extra %** on all future transactions from that advertiser.
+> **Business Context**: This route is called when a new community/club onboards. The partner receives a ready-to-use list of Awin advertisers they can apply to **on behalf of the club**. Successful onboarding of the supplier earns the partner an **extra %** on all future transactions from that advertiser.
 
 ### Accepted Parameters
 
@@ -80,7 +80,7 @@ See the [top-level README](../README.md) for architecture overview, environment 
 
 **Trigger**: `onboarding: true`
 
-**Purpose**: Onboard new joined AWIN advertisers (create users) + send daily operational report.
+**Purpose**: Onboard new joined Awin advertisers (create users) + send daily operational report.
 
 ### Accepted Parameters
 
@@ -99,7 +99,7 @@ See the [top-level README](../README.md) for architecture overview, environment 
 
 **Trigger**: `route: "sync-merchants"`
 
-**Purpose**: Full sync of joined AWIN merchants into the local `AwinHighApprovalMerchants` table.
+**Purpose**: Full sync of joined Awin merchants into the local `AwinHighApprovalMerchants` table.
 
 ### Accepted Parameters
 
@@ -116,7 +116,7 @@ _No special parameters required._ The handler runs a complete sync when triggere
 
 **Trigger**: `route: "awin-payments"`
 
-**Purpose**: Ingest last 365 days of AWIN transactions in batches (20 merchants at a time).
+**Purpose**: Ingest last 365 days of Awin transactions in batches (20 merchants at a time).
 
 ### Accepted Parameters
 
