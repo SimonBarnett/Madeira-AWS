@@ -45,7 +45,7 @@ Each queue has its own folder containing:
 
 ## Related Documentation
 
-- [API Routes](../API/README.md) — Where messages are usually enqueued
+- [API Routes](../API/readme.md) — Where messages are usually enqueued
 - [SQS Catalogue Pipeline](madeira-sqs-catalogue/readme.md) — Full onboarding flow
 - [Merchant Ingestion](madeira-sqs-merchant/readme.md) — How merchant parts enter the system
 - [Affiliate Search](madeira-sqs-affiliate/readme.md) — How Grok-powered relevance scoring works
