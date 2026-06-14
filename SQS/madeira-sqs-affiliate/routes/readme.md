@@ -1,4 +1,4 @@
-# Madeira Affiliate Search Connectors
+# 🔌 Madeira Affiliate Search Connectors
 
 This folder contains the **search connectors** used by the `madeira-sqs-affiliate` Lambda.
 
