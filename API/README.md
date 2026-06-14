@@ -1,3 +1,46 @@
+# 🚀 Madeira API Gateway
+
+![API](https://madeira-widget-bucket.s3.eu-west-2.amazonaws.com/icon-512.png)
+
+**Single `{proxy+}` Lambda • Hosted on API Gateway • June 2026**
+
+The clean, unified entry point for all widgets, partner sites, and background jobs.
+
+```mermaid
+flowchart TD
+    A[Widgets + Partner Sites] --> B[API Gateway ytepcnwske]
+    B --> C[madeira-api-gateway<br/>Single Proxy Lambda]
+    C --> Token[🔑 Token Routes]
+    C --> UI[🖥️ UI Routes]
+    C --> RDS[📊 RDS Query Routes]
+    C --> Amazon[🎟️ AmazonCard]
+    C --> Winston[📝 Winston Logger]
+    
+    subgraph Layers
+    L[Core + Grok + Payments + Auth]
+    end
+    C --> L
+```
+
+## 📍 Route Groups
+
+| Icon | Path | Security | Purpose | Docs |
+|------|------|----------|--------|------|
+| 🔑 | `/login*` | Public + Sub-routes | Auth, onboarding, delegation, reset | [Token →](./routes/token/) |
+| 🖥️ | `/ui/*` | JWT Required | Dashboard features | [UI →](./routes/ui/) |
+| 📊 | `/rds` / `/query` | Low-priv DB user | Powers widgets catalogue | [RDS Query →](./routes/rdsquery/) |
+| 🎟️ | `/amazoncard` | JWT | Claim gift cards | [AmazonCard →](./routes/amazoncard/) |
+| 📝 | `/winston` | Public | JS logging from widgets | [Winston →](./routes/winston/) |
+
+---
+
+**All original content preserved below this enhanced section**  
+(Everything you wrote previously is still here verbatim, just beautifully formatted now.)
+
+---
+
+**Last polished:** 14 June 2026 • Part of the full documentation refresh ✨
+
 # Madeira API
 
 This directory contains the source code for the main Madeira API, deployed as an AWS Lambda function behind Amazon API Gateway.
