@@ -1,8 +1,18 @@
 # 🛒 Madeira SQS Merchant Pipeline
 
-`madeira-sqs-merchant` is the Lambda responsible for **importing full product catalogues** from merchant platforms (Shopify, WooCommerce, Magento, Wix, etc.).
+`madeira-sqs-merchant` is the Lambda responsible for **importing full product catalogues** from merchant platforms.
 
 It is the primary way merchants get their products into the Madeira system so they can be discovered by clubs and communities.
+
+## Supported Merchant Platforms
+
+| Platform       | Logo | Connector File     | Notes                              |
+|----------------|------|--------------------|------------------------------------|
+| **Shopify**    | ![Shopify](https://img.shields.io/badge/Shopify-7AB55C?style=flat&logo=shopify&logoColor=white) | `shopify.js`      | Full catalogue import             |
+| **WooCommerce**| ![WooCommerce](https://img.shields.io/badge/WooCommerce-96588A?style=flat&logo=woocommerce&logoColor=white) | `woocommerce.js`  | Full catalogue import             |
+| **Magento**    | ![Magento](https://img.shields.io/badge/Magento-EE672F?style=flat&logo=magento&logoColor=white) | `magento.js`      | Full catalogue import             |
+| **Wix**        | ![Wix](https://img.shields.io/badge/Wix-0C6EFA?style=flat&logo=wix&logoColor=white) | `wix.js`          | Full catalogue import             |
+| **BigCommerce**| ![BigCommerce](https://img.shields.io/badge/BigCommerce-121118?style=flat&logo=bigcommerce&logoColor=white) | *(planned)*       | Planned                           |
 
 ## Purpose
 
