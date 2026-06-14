@@ -1,4 +1,4 @@
-# Madeira SQS Merchant Pipeline – SQS Message Handlers
+# ⚙️ Madeira SQS Merchant Pipeline – SQS Message Handlers
 
 This document describes the SQS message-driven pipeline inside `madeira-sqs-merchant`.
 
