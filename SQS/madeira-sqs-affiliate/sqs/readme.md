@@ -1,4 +1,4 @@
-# Madeira SQS Affiliate Pipeline – SQS Message Handlers
+# ⚙️ Madeira SQS Affiliate Pipeline – SQS Message Handlers
 
 This document describes the SQS-driven processing pipeline inside `madeira-sqs-affiliate`.
 
