@@ -1,4 +1,4 @@
-# Partner Site Widgets - Documentation
+# 🧩 Partner Site Widgets - Documentation
 
 This document describes all JavaScript widgets used across the Club Madeira partner website templates located in `/HOST/partner/`.
 
