@@ -1,4 +1,4 @@
-# RDS / Microsoft SQL Server - Madeira Platform
+# 🗄️ RDS / Microsoft SQL Server - Madeira Platform
 
 This folder contains the database schema and related scripts for the **Club Madeira** platform running on **Amazon RDS for SQL Server**.
 
