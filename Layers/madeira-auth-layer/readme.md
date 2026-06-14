@@ -1,8 +1,12 @@
 # 🔐 Madeira Auth Layer (`madeira-auth-layer`)
 
-This is a **thin, focused Lambda Layer** dedicated to authentication utilities — primarily JWT signing and verification.
+This is a **thin, focused Lambda Layer** dedicated to authentication utilities.
 
-It is intentionally small and depends on the **Core Layer** for configuration and logging.
+It provides:
+- User ID generation and validation (`auth-utils.js`)
+- JWT signing and verification (`jwt.js`)
+
+It depends on the **Core Layer** for configuration, logging, and password hashing.
 
 **Location in repo:** `Layers/madeira-auth-layer/`
 
@@ -10,9 +14,9 @@ It is intentionally small and depends on the **Core Layer** for configuration an
 
 ## Purpose
 
-- Provide clean `signJWT()` and `verifyJWT()` functions
-- Centralize JWT logic so it can be updated independently of business code
-- Depend on the Core Layer for secrets and logging (single source of truth)
+- Provide clean utilities for user identity and JWT handling
+- Keep auth-related logic centralized and easy to maintain
+- Depend on the Core Layer for secrets, logging, and bcrypt functions
 
 ---
 
@@ -21,19 +25,42 @@ It is intentionally small and depends on the **Core Layer** for configuration an
 ```
 Layers/madeira-auth-layer/
 └── nodejs/
-    └── jwt.js          ← Main (and only) module
+    ├── auth-utils.js     ← User ID generation + validation
+    └── jwt.js              ← JWT signing & verification
 ```
 
 ---
 
-## Main Module: `jwt.js`
+## 1. `auth-utils.js` – User ID Utilities
 
 ### Exports
 
-| Function       | Description                              | Returns                  |
-|----------------|------------------------------------------|--------------------------|
-| `signJWT(payload, options?)`   | Signs a JWT token                        | `Promise<string>`        |
-| `verifyJWT(token)`             | Verifies and decodes a JWT token         | `Promise<object>`        |
+| Function            | Description                                      | Returns     |
+|---------------------|--------------------------------------------------|-------------|
+| `generateUserId()`  | Generates a unique 8-character User ID with checksum | `string`    |
+| `validateUserId(userId)` | Validates a User ID (length + checksum)     | `boolean`   |
+
+### Example Usage
+
+```js
+const { generateUserId, validateUserId } = require('/opt/nodejs/auth-utils');
+
+const userId = generateUserId();           // e.g. "L7WDZWC8"
+const isValid = validateUserId(userId);    // true
+```
+
+**Note:** These functions are used during user creation (onboarding, delegation, etc.).
+
+---
+
+## 2. `jwt.js` – JWT Handling
+
+### Exports
+
+| Function                     | Description                          | Returns             |
+|------------------------------|--------------------------------------|---------------------|
+| `signJWT(payload, options?)` | Signs a JWT token                    | `Promise<string>`   |
+| `verifyJWT(token)`           | Verifies and decodes a JWT token     | `Promise<object>`   |
 
 ### Example Usage
 
@@ -58,44 +85,44 @@ try {
 
 ---
 
+## Bcrypt / Password Hashing
+
+**Bcrypt functions are NOT in this layer.**
+
+Password hashing (`hashPassword` / `comparePassword`) lives in the **Core Layer**:
+
+- `Layers/madeira-core-layer/nodejs/helpers.js`
+- Exported via `/opt/nodejs/helpers`
+
+```js
+const { hashPassword, comparePassword } = require('/opt/nodejs/helpers');
+
+const hashed = await hashPassword('MyPassword123');
+const match = await comparePassword('MyPassword123', hashed);
+```
+
+See the [Core Layer README](../madeira-core-layer/readme.md) for full details.
+
+---
+
 ## Dependencies
 
-This layer has a **hard dependency** on the **Core Layer** (`madeira-core-layer`).
-
-It imports:
-
-- `getJwtConfig()` — to retrieve the JWT secret from SSM
-- `logger` — for structured logging
-
-**See Core Layer documentation for:**
-- How the JWT secret is loaded and cached
-- SSM parameter: `/madeira/jwt/secret-key`
-- Self-healing placeholder behavior
-
-→ [Core Layer README](../madeira-core-layer/readme.md#2-jwt-jwt-configjs)
+This layer depends on the **Core Layer** (`madeira-core-layer`) for:
+- `getJwtConfig()`
+- `logger`
+- `hashPassword` / `comparePassword` (bcrypt)
 
 ---
 
 ## Important Notes
 
-- The layer uses **HS256** algorithm only.
-- It does **not** manage the secret itself — that responsibility belongs to the Core Layer.
-- All errors are logged with a unique `transactionId` for easier debugging in CloudWatch.
-- Tokens are expected to include at minimum `user_id` and `permissions`.
-
----
-
-## When to Use This Layer
-
-Use `madeira-auth-layer` in any Lambda that needs to:
-
-- Issue new JWTs after login / onboarding / password reset
-- Validate incoming JWTs from API Gateway authorizers or direct calls
-
-Do **not** duplicate JWT logic in individual services.
+- The layer uses **HS256** algorithm only for JWTs.
+- User IDs are always 8 characters with a checksum digit.
+- All errors are logged with a unique `transactionId`.
+- Do **not** duplicate auth logic in individual services.
 
 ---
 
 **Last Updated:** 14 June 2026  
 **Maintained by:** Simon Barnett (Club Madeira)  
-**Depends on:** `madeira-core-layer` (for JWT config + logging)
+**Depends on:** `madeira-core-layer`
