@@ -1,4 +1,4 @@
-# Madeira Payments Layer (`madeira-payments-layer`)
+# 💳 Madeira Payments Layer (`madeira-payments-layer`)
 
 This layer handles **email**, **SMS**, and **Stripe** payment/integration functionality for the Madeira platform.
 
