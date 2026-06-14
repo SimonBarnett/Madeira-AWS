@@ -1,4 +1,4 @@
-# Madeira SQS Affiliate Pipeline
+# 🔎 Madeira SQS Affiliate Pipeline
 
 `madeira-sqs-affiliate` is the Lambda responsible for **searching affiliate product sources** and running AI-powered relevance filtering using xAI Grok.
 
