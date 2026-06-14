@@ -60,9 +60,9 @@ flowchart TD
 
 | Folder | Purpose | Key README |
 |--------|---------|------------|
-| **API/** | Main API Gateway + route handlers (token, ui, rdsquery, etc.) | [API/README.md](./API/README.md) |
+| **API/** | Main API Gateway + route handlers (token, ui, rdsquery, etc.) | [API/readme.md](./API/readme.md) |
 | **SQS/** | Background job processors (merchant ingest, affiliate search, catalogue orchestration) | [SQS/readme.md](./SQS/readme.md) |
-| **Lambdas/** | Standalone Lambdas (awin-clubscan, amazoncard-topup, layer-cake tester) | [Lambdas/README.md](./Lambdas/README.md) |
+| **Lambdas/** | Standalone Lambdas (awin-clubscan, amazoncard-topup, layer-cake tester) | [Lambdas/readme.md](./Lambdas/readme.md) |
 | **Layers/** | Shared Lambda Layers (core, auth, grok, payments) | [Layers/readme.md](./Layers/readme.md) |
 | **RDS/** | Database schema, stored procedures, migration notes | [RDS/readme.md](./RDS/readme.md) |
 | **HOST/partner/** | Partner onboarding package (widgets, templates, PWA setup) | [HOST/partner/readme.md](./HOST/partner/readme.md) |
@@ -82,7 +82,7 @@ flowchart TD
 ## 📚 Full Documentation Map
 
 - [SQS System Overview](./SQS/readme.md)
-- [API Architecture](./API/README.md)
+- [API Architecture](./API/readme.md)
 - [Core Layer](./Layers/madeira-core-layer/readme.md)
 - [Partner Integration Guide](./HOST/partner/readme.md)
 - [Database Schema](./RDS/readme.md)
