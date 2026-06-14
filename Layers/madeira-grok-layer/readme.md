@@ -1,4 +1,4 @@
-# Madeira Grok Layer (`madeira-grok-layer`)
+# 🧠 Madeira Grok Layer (`madeira-grok-layer`)
 
 This layer provides **Grok / xAI integration** utilities, with a focus on **structured JSON output** (both real-time streaming and batch processing).
 
@@ -63,7 +63,6 @@ async function callGrokStructured(
          }
        }
      }
-     ```
 
 3. **Streaming Implementation**
    - Uses proper Node.js `for await...of` on `response.body`
@@ -148,8 +147,8 @@ const schema = {
 
 const batch = await submitStructuredBatch(requests, schema, {
     model: "grok-4",
-    max_tokens: 300
-});
+    max_tokens: 300 }
+);
 
 console.log("Batch submitted:", batch.id);
 
