@@ -4,9 +4,17 @@
 
 It powers the searchable affiliate layer that supplements the merchant-imported products.
 
+## Supported Affiliate Sources
+
+| Source              | Logo | Type                    | Description                                                                 |
+|---------------------|------|-------------------------|-----------------------------------------------------------------------------|
+| **Awin** (Internal) | ![Awin](https://img.shields.io/badge/Awin-00A651?style=flat&logo=awin&logoColor=white) | Database Search     | Searches products previously imported via the merchant pipeline             |
+| **eBay**            | ![eBay](https://img.shields.io/badge/eBay-E53238?style=flat&logo=ebay&logoColor=white) | Live API Search         | Real-time search against eBay Buy Browse API                                |
+| **Amazon**          | ![Amazon](https://img.shields.io/badge/Amazon-FF9900?style=flat&logo=amazon&logoColor=white) | Live API Search         | Real-time search against Amazon Product Advertising API (PA-API)            |
+
 ## Purpose
 
-- Search live affiliate networks (Amazon PA-API, eBay) and the internal merchant product pool (via the `awin` source)
+- Search live affiliate networks (Amazon PA-API, eBay) and the internal merchant product pool (via the `Awin` source)
 - Store results temporarily in S3
 - Use Grok to score which products are relevant for each club’s categories
 - Insert relevant products into the live `Products` table
@@ -143,7 +151,7 @@ SQS/madeira-sqs-affiliate/
 ├── sqs/                     # Message handlers
 │   ├── affiliate.js         # PROCESS_CATEGORY handler + S3 accumulation
 │   ├── grokBatch.js         # Submits chunks to xAI Grok
-│   ├── grokPoll.js          # Polls and finalizes Grok results
+│   ├── grokPoll.js         # Polls and finalizes Grok results
 │   └── readme.md            # ← Detailed message types & batching docs
 └── readme.md                # ← You are here
 ```
