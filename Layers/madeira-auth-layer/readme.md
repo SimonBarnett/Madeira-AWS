@@ -1,4 +1,4 @@
-# Madeira Auth Layer (`madeira-auth-layer`)
+# 🔐 Madeira Auth Layer (`madeira-auth-layer`)
 
 This is a **thin, focused Lambda Layer** dedicated to authentication utilities — primarily JWT signing and verification.
 
