@@ -55,7 +55,7 @@ Maintaining strong coverage of Awin merchants (via `sync-merchants` and ongoing 
 - `awin-payments`: Ingests recent Awin transactions
 - `onboarding`: Handles new advertiser onboarding + daily operational reports
 
-**Full documentation**: See [madeira-awin-clubscan/README.md](madeira-awin-clubscan/README.md) and the detailed [routes/README.md](madeira-awin-clubscan/routes/README.md).
+**Full documentation**: See [madeira-awin-clubscan/readme.md](madeira-awin-clubscan/readme.md) and the detailed [routes/readme.md](madeira-awin-clubscan/routes/readme.md).
 
 ### 2. [madeira-posthog-updatedb](madeira-posthog-updatedb/)
 
@@ -83,14 +83,14 @@ This Lambda deliberately retains `aws-sdk` v2 because of complex SigV4 signing r
 
 - Most Lambdas should have **zero npm dependencies** and rely on the shared layers.
 - The exception is `amazoncard-topup`, which requires aws-sdk v2 for legacy signing.
-- Each Lambda has its own `README.md` with detailed documentation.
+- Each Lambda has its own `readme.md` with detailed documentation.
 - Scheduled Lambdas are triggered via **Amazon EventBridge Scheduler**.
 
 ---
 
 ## Related Documentation
 
-- [Layers Overview](../Layers/README.md)
-- Individual Lambda READMEs in their respective folders
+- [Layers Overview](../Layers/readme.md)
+- Individual Lambda readmes in their respective folders
 
 **Last Updated:** 14 June 2026
