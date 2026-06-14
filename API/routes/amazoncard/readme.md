@@ -1,4 +1,6 @@
-# Amazon Card Claim Route (`/API/routes/amazoncard`)
+# 🛒 Amazon Card Claim Route (`/API/routes/amazoncard`)
+
+![Amazon](https://madeira-widget-bucket.s3.eu-west-2.amazonaws.com/icon-192.png)
 
 **Purpose:**  
 This route handles **voucher claiming** for the Club Madeira Amazon Affiliate browser extension.
@@ -9,7 +11,7 @@ It is called exclusively by the Chrome and Safari extensions when a user clicks 
 
 ---
 
-## Overview
+## 📊 Overview
 
 | Aspect                    | Details |
 |---------------------------|---------|
@@ -22,7 +24,22 @@ It is called exclusively by the Chrome and Safari extensions when a user clicks 
 
 ---
 
-## How the Extension Calls This Route
+## 🔄 Flow Diagram
+
+```mermaid
+graph TD
+    A[Browser Extension<br/>Chrome / Safari] -->|POST /amazoncard| B[API Gateway + Lambda]
+    B --> C[sp_ClaimVoucher<br/>Stored Procedure]
+    C --> D{Decision}
+    D -->|Success| E[Return voucher value + redeem_url]
+    D -->|Failure| F[Return reason + httpStatus]
+    E --> G[Extension shows success UI]
+    F --> H[Extension shows error]
+```
+
+---
+
+## 🖥️ How the Extension Calls This Route
 
 The Chrome extension (`Extension/chrome/content.js`) does the following:
 
@@ -48,7 +65,7 @@ const data = await response.json();
 
 ---
 
-## Backend Behavior
+## ⚙️ Backend Behavior
 
 When called, the route:
 
@@ -71,7 +88,7 @@ The stored procedure contains the actual business logic (cooldowns, voucher avai
 
 ---
 
-## Request Format
+## 📝 Request Format
 
 ### POST `/amazoncard`
 
@@ -90,7 +107,7 @@ X-Fingerprint: <optional browser fingerprint>
 
 ---
 
-## Response Format
+## ✅ Response Format
 
 The response structure is determined entirely by `sp_ClaimVoucher`.
 
@@ -126,7 +143,7 @@ The response structure is determined entirely by `sp_ClaimVoucher`.
 
 ---
 
-## Security & Design Notes
+## 🛡️ Security & Design Notes
 
 - This is a **public endpoint** (no JWT) because it is called from a browser extension.
 - Rate limiting / cooldown logic lives inside `sp_ClaimVoucher`.
@@ -135,7 +152,7 @@ The response structure is determined entirely by `sp_ClaimVoucher`.
 
 ---
 
-## File Location
+## 📁 File Location
 
 ```
 API/routes/amazoncard/index.js
@@ -143,7 +160,7 @@ API/routes/amazoncard/index.js
 
 ---
 
-## Related Components
+## 🔗 Related Components
 
 | Component                        | Location                          | Role |
 |----------------------------------|-----------------------------------|------|
@@ -154,7 +171,7 @@ API/routes/amazoncard/index.js
 
 ---
 
-## Maintenance Notes
+## 🧰 Maintenance Notes
 
 - Do **not** add authentication to this route.
 - If you need to change the request/response contract, coordinate with the browser extension team.
