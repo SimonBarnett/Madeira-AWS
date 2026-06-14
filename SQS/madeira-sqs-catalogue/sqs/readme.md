@@ -1,4 +1,4 @@
-# Madeira SQS Catalogue Pipeline – SQS Handlers
+# 🧠 Madeira SQS Catalogue Pipeline – SQS Handlers
 
 This document provides full documentation for the SQS message handlers in `madeira-sqs-catalogue/sqs/`.
 
