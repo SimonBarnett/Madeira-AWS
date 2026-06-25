@@ -1,0 +1,1 @@
+-- new table for fingerprint catalog access tracking
