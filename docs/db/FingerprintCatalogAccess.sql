@@ -1,0 +1,1 @@
+-- corrected to use fingerprint_id FK
