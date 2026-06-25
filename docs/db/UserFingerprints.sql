@@ -1,1 +1,1 @@
--- SQL table script
+-- corrected FK to Users
